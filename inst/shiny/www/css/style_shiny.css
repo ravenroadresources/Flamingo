@@ -1,0 +1,76 @@
+
+.form-group.shiny-input-container{
+	width:100px;
+   white-space: nowrap;
+	color: #cccccc;
+}
+.form-group {font-color: #474747}
+.js-range-slider {width: 100px }
+ .irs.js-irs-0.irs-with-grid{
+ 	width:450%;
+	white-space: nowrap;
+	}
+ .col-sm-8{
+ 	width:60%
+ 	}
+
+.shiny-plot-output{
+	width:75%;
+	height:800px
+}
+
+
+a:link    {color:white; background-color:transparent; text-decoration:none}
+a:visited {color:white; background-color:transparent; text-decoration:none}
+a:hover   {color:#1BA2F3; background-color:transparent; text-decoration:underline}
+a:active  {color:#1BA2F3; background-color:transparent; text-decoration:underline}
+
+
+h4 {
+    font-weight: 500;
+    line-height: 0.8;
+    color: #1BA2F3;
+    font-style: bold;
+    font-size: 10px;
+}
+
+
+.contentgradient {
+    position: relative;
+    width: 100%;
+    padding: 0px 0px;
+}
+.contentcenter {
+    position: relative;
+    left: 10%;
+    width: 80%;
+    padding: 0px 0px;
+} /* leave 5% margin on the sides */
+
+
+
+.distrofitclass{
+	visibility: hidden;
+	opacity: 1;
+	background-color: #474747;
+	position: fixed;
+	top: 51px;
+	right: 0;
+	width: 70%;
+	z-index: 900;
+	}
+
+/* #plot-container {
+  position: relative;
+}
+#loading-spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 10;
+  margin-top: -33px;  /* half of the spinner's height
+  margin-left: -33px; /* half of the spinner's width
+}
+#plot.recalculating {
+  z-index: 10;
+} */
