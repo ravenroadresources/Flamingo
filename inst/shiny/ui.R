@@ -2,6 +2,7 @@ library(shiny)
 library(shinydashboard)
 library(shinythemes)
 library(rhandsontable)
+library(shinyjs)
 
 # UI
 #######
@@ -30,6 +31,7 @@ shiny::shinyUI(
   ),
   ######################################################################################
   dashboardSidebar(
+    shinyjs::useShinyjs(),
     h4("Fluid Properties Uncertainty Analysis"),
     hr(),
     sidebarMenu(selected = "_intro",
@@ -63,7 +65,6 @@ shiny::shinyUI(
   ),
   ######################################################################################
   dashboardBody(
-    shinyjs::useShinyjs(),
     tabItems(
       tabItem(tabName = "_intro",
               shiny::h3("Flamingo"),
@@ -119,7 +120,7 @@ shiny::shinyUI(
       ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_definition",
-              tabsetPanel(
+              tabsetPanel(id = "navbar",
                 tabPanel("Variables",
                           h4("Variables:"),
                          rHandsontableOutput("distro_params_table"),

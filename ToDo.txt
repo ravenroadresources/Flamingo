@@ -15,7 +15,7 @@ MONTECARLO
     - set new params as default / reset
     - add column to calculated p90 and p10 ??
 - conditional input variables depending on pt_method
-- hide tab P&T vs Depth when direct P&T data option is selected
+------------- hide tab P&T vs Depth when direct P&T data option is selected
 - sigma matrix input !!
 - make sigma matrix conditional on correlated vs uncorrelated
 ------------- make water dept conditional on offshore
