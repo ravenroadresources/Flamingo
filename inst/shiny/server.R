@@ -5,131 +5,310 @@ require(dplyr)
 
 shiny::shinyServer(function(input, output) {
 
+  observe({
+    if (input$close > 0) shiny::stopApp()  # stop shiny
+  })
+  #
+  # observe({
+  #   if (input$validate > 0) {
+  #     wb <- loadWorkbook("Flamingo.xls")
+  #     sheets <- getSheets(wb)
+  #
+  #     cs1 <- CellStyle(wb) + Font(wb, isItalic=TRUE) # rowcolumns
+  #
+  #     addDataFrame(DATA_r(), sheet = sheets$X,
+  #                  startRow = 1 , startColumn = 1,
+  #                  col.names = TRUE, row.names = FALSE,
+  #                  rownamesStyle = cs1)
+  #     saveWorkbook(wb, "Flamingo.xls")
+  #   }
+  # })
+  #
+  # observe({
+  #   if (input$run_mc > 0) {
+  #     path_to_vbs_file <- "../extdata/Flamingo.vbs"
+  #     shell(shQuote(normalizePath(path_to_vbs_file)), "cscript", flag = "//nologo")
+  #   }
+  # })
+  observe({
+    if (input$pt_method == 0) aa <- TRUE
+    else aa <- FALSE
+    shinyjs::toggle(condition = aa, selector = "#navbar li a[data-value=PTDEPTH]")
+  })
+
   seed_r <- shiny::reactive({
     x <- input$ss
     return(x)
   })
+  n_r <- shiny::reactive({
+    x <- input$nn
+    return(x)
+  })
+  r_r <- shiny::reactive({
+    x <- input$rr
+    return(x)
+  })
 
   # ----------------------------------------------------------------------------
-  API_mean_r <- shiny::reactive({
-    x <- input$API_mean
-    return(x)
-  })
-  API_sd_r <- shiny::reactive({
-    x <- input$API_sd
-    return(x)
-  })
-  API_distro_r <- shiny::reactive({
-    x <- input$API_distro
-    return(x)
-  })
-  API_lower_r <- shiny::reactive({
-    x <- input$API_lower
-    return(x)
-  })
-  API_upper_r <- shiny::reactive({
-    x <- input$API_upper
-    return(x)
-  })
+  # API_mean_r <- shiny::reactive({
+  #   x <- input$API_mean
+  #   return(x)
+  # })
+  # API_sd_r <- shiny::reactive({
+  #   x <- input$API_sd
+  #   return(x)
+  # })
+  # API_distro_r <- shiny::reactive({
+  #   x <- input$API_distro
+  #   return(x)
+  # })
+  # API_lower_r <- shiny::reactive({
+  #   x <- input$API_lower
+  #   return(x)
+  # })
+  # API_upper_r <- shiny::reactive({
+  #   x <- input$API_upper
+  #   return(x)
+  # })
 
-  GOR_mean_r <- shiny::reactive({
-    x <- input$GOR_mean
-    return(x)
-  })
-  GOR_sd_r <- shiny::reactive({
-    x <- input$GOR_sd
-    return(x)
-  })
-  GOR_distro_r <- shiny::reactive({
-    x <- input$GOR_distro
-    return(x)
-  })
-  GOR_lower_r <- shiny::reactive({
-    x <- input$GOR_lower
-    return(x)
-  })
-  GOR_upper_r <- shiny::reactive({
-    x <- input$GOR_upper
-    return(x)
-  })
-
-  DEPT_err_mean_r <- shiny::reactive({
-    x <- input$DEPT_err_mean
-    return(x)
-  })
-  DEPT_err_sd_r <- shiny::reactive({
-    x <- input$DEPT_err_sd
-    return(x)
-  })
-  DEPT_err_distro_r <- shiny::reactive({
-    x <- input$DEPT_err_distro
-    return(x)
-  })
-  DEPT_err_lower_r <- shiny::reactive({
-    x <- input$DEPT_err_lower
-    return(x)
-  })
-  DEPT_err_upper_r <- shiny::reactive({
-    x <- input$DEPT_err_upper
-    return(x)
-  })
-
-  grad_P_mean_r <- shiny::reactive({
-    x <- input$grad_P_mean
-    return(x)
-  })
-  grad_P_sd_r <- shiny::reactive({
-    x <- input$grad_P_sd
-    return(x)
-  })
-  grad_P_distro_r <- shiny::reactive({
-    x <- input$grad_P_distro
-    return(x)
-  })
-  grad_P_lower_r <- shiny::reactive({
-    x <- input$grad_P_lower
-    return(x)
-  })
-  grad_P_upper_r <- shiny::reactive({
-    x <- input$grad_P_upper
-    return(x)
-  })
-
-  grad_T_mean_r <- shiny::reactive({
-    x <- input$grad_T_mean
-    return(x)
-  })
-  grad_T_sd_r <- shiny::reactive({
-    x <- input$grad_T_sd
-    return(x)
-  })
-  grad_T_distro_r <- shiny::reactive({
-    x <- input$grad_T_distro
-    return(x)
-  })
-  grad_T_lower_r <- shiny::reactive({
-    x <- input$grad_T_lower
-    return(x)
-  })
-  grad_T_upper_r <- shiny::reactive({
-    x <- input$grad_T_upper
-    return(x)
-  })
+  # GOR_mean_r <- shiny::reactive({
+  #   x <- input$GOR_mean
+  #   return(x)
+  # })
+  # GOR_sd_r <- shiny::reactive({
+  #   x <- input$GOR_sd
+  #   return(x)
+  # })
+  # GOR_distro_r <- shiny::reactive({
+  #   x <- input$GOR_distro
+  #   return(x)
+  # })
+  # GOR_lower_r <- shiny::reactive({
+  #   x <- input$GOR_lower
+  #   return(x)
+  # })
+  # GOR_upper_r <- shiny::reactive({
+  #   x <- input$GOR_upper
+  #   return(x)
+  # })
+  #
+  # DEPT_err_mean_r <- shiny::reactive({
+  #   x <- input$DEPT_err_mean
+  #   return(x)
+  # })
+  # DEPT_err_sd_r <- shiny::reactive({
+  #   x <- input$DEPT_err_sd
+  #   return(x)
+  # })
+  # DEPT_err_distro_r <- shiny::reactive({
+  #   x <- input$DEPT_err_distro
+  #   return(x)
+  # })
+  # DEPT_err_lower_r <- shiny::reactive({
+  #   x <- input$DEPT_err_lower
+  #   return(x)
+  # })
+  # DEPT_err_upper_r <- shiny::reactive({
+  #   x <- input$DEPT_err_upper
+  #   return(x)
+  # })
+  #
+  # grad_P_mean_r <- shiny::reactive({
+  #   x <- input$grad_P_mean
+  #   return(x)
+  # })
+  # grad_P_sd_r <- shiny::reactive({
+  #   x <- input$grad_P_sd
+  #   return(x)
+  # })
+  # grad_P_distro_r <- shiny::reactive({
+  #   x <- input$grad_P_distro
+  #   return(x)
+  # })
+  # grad_P_lower_r <- shiny::reactive({
+  #   x <- input$grad_P_lower
+  #   return(x)
+  # })
+  # grad_P_upper_r <- shiny::reactive({
+  #   x <- input$grad_P_upper
+  #   return(x)
+  # })
+  #
+  # grad_T_mean_r <- shiny::reactive({
+  #   x <- input$grad_T_mean
+  #   return(x)
+  # })
+  # grad_T_sd_r <- shiny::reactive({
+  #   x <- input$grad_T_sd
+  #   return(x)
+  # })
+  # grad_T_distro_r <- shiny::reactive({
+  #   x <- input$grad_T_distro
+  #   return(x)
+  # })
+  # grad_T_lower_r <- shiny::reactive({
+  #   x <- input$grad_T_lower
+  #   return(x)
+  # })
+  # grad_T_upper_r <- shiny::reactive({
+  #   x <- input$grad_T_upper
+  #   return(x)
+  # })
+  #
+  # water_mean_r <- shiny::reactive({
+  #   x <- input$water_mean
+  #   return(x)
+  # })
+  # water_sd_r <- shiny::reactive({
+  #   x <- input$water_sd
+  #   return(x)
+  # })
+  # water_distro_r <- shiny::reactive({
+  #   x <- input$water_distro
+  #   return(x)
+  # })
+  # water_lower_r <- shiny::reactive({
+  #   x <- input$water_lower
+  #   return(x)
+  # })
+  # water_upper_r <- shiny::reactive({
+  #   x <- input$water_upper
+  #   return(x)
+  # })
+  #
+  # press_mean_r <- shiny::reactive({
+  #   x <- input$press_mean
+  #   return(x)
+  # })
+  # press_sd_r <- shiny::reactive({
+  #   x <- input$press_sd
+  #   return(x)
+  # })
+  # press_distro_r <- shiny::reactive({
+  #   x <- input$press_distro
+  #   return(x)
+  # })
+  # press_lower_r <- shiny::reactive({
+  #   x <- input$press_lower
+  #   return(x)
+  # })
+  # press_upper_r <- shiny::reactive({
+  #   x <- input$press_upper
+  #   return(x)
+  # })
+  #
+  # temp_mean_r <- shiny::reactive({
+  #   x <- input$temp_mean
+  #   return(x)
+  # })
+  # temp_sd_r <- shiny::reactive({
+  #   x <- input$temp_sd
+  #   return(x)
+  # })
+  # temp_distro_r <- shiny::reactive({
+  #   x <- input$temp_distro
+  #   return(x)
+  # })
+  # temp_lower_r <- shiny::reactive({
+  #   x <- input$temp_lower
+  #   return(x)
+  # })
+  # temp_upper_r <- shiny::reactive({
+  #   x <- input$temp_upper
+  #   return(x)
+  # })
 
   depth_r <- shiny::reactive({
     x <- input$depth
     return(x)
   })
-  waterdepth_r <- shiny::reactive({
-    x <- input$wd
-    return(x)
+  # waterdepth_r <- shiny::reactive({
+  #   x <- input$wd
+  #   return(x)
+  # })
+
+  distroparam <- dplyr::data_frame(variable = c("API", "GOR", "Depth Uncertainty", "Pressure gradient",
+                                          "Temperature gradient", "Pressure", "Temperature", "Water salinity"),
+                             distro = factor(rep("normal", 8),
+                                             levels = c("normal", "truncated normal", "lognormal",
+                                                        "truncated lognormal", "uniform", "triangular", "constant value"),
+                                             ordered = TRUE),
+                             mean = c(25, 300, rep(1, 6)),
+                             sd = c(5, 100, rep(1, 6)),
+                             lower = c(20, 100, rep(1, 6)),
+                             higher = c(40, 800, rep(1, 6)))
+
+
+  # if (!is.null("default/distro_params_user.txt")) {
+  #   distroparam <- read.table("default/distro_params_user.txt", header = TRUE)
+  # }
+  # else if (!is.null("default/distro_params_default.txt")) {
+  #   distroparam <- read.table("default/distro_params_default.txt", header = TRUE)
+  # }
+  # else {
+  #   distroparam <- matrix(seq(NA, 48), nrow = 8)
+  #   colnames(distroparam) <- c("API", "GOR", "Depth Uncertainty", "Pressure gradient",
+  #                              "Temperature gradient", "Pressure", "Temperature", "Water salinity")
+  # }
+
+
+
+  values <- reactiveValues()
+
+  ## Handsontable
+  observe({
+    # if(input$pt_mehtod == 0) {
+    #   distroparam <- distroparam %>%
+    #     dplyr::filter(variable != "Pressure",
+    #                   variable != "Temperature")
+    #   }
+    # else {
+    #   distroparam <- distroparam %>%
+    #     dplyr::filter(variable != "Depth Uncertainty",
+    #                   variable != "Pressure gradient",
+    #                   variable != "Temperature gradient")
+    # }
+
+    if (!is.null(input$distro_params_table)) {
+      values$previous <- isolate(values$distroparam)
+      distroparam = hot_to_r(input$distro_params_table)
+    } else {
+      if (is.null(values$distroparam))
+        distroparam <- distroparam
+      else
+        distroparam <- values$distroparam
+    }
+    values$distroparam <- distroparam
   })
+
+  output$distro_params_table <- renderRHandsontable({
+    # distroparam_temp <- distroparam_r()
+    # distroparam <- values$distroparam_r()
+    if (!is.null(distroparam))
+      rhandsontable(distroparam, useTypes = TRUE, stretchH = "all") %>%
+        hot_col("variable", readOnly = TRUE) %>%
+        hot_col(col = "distro", type = "dropdown", source = c("normal", "truncated normal", "lognormal",
+                                                              "truncated lognormal", "uniform", "triangular", "fixed value"))
+  })
+
+  observe({
+    filepath <- system.file(package = "Flamingo")
+    filepath_full <- paste0(filepath, "/shiny/default/distro_params_user.txt")
+    if (input$dp_set_def > 0) write.table(values$distroparam, filepath_full)
+  })
+  observe({
+    filepath <- system.file(package = "Flamingo")
+    filepath_full <- paste0(filepath, "/shiny/default/distro_params_user.txt")
+    if (input$dp_reset > 0) rm(filepath_full) # delete file
+  })
+
+
 
   # ----------------------------------------------------------------------------
   # Latin Hypercube Sampling
   LHS_r <- shiny::reactive({
-    n <- input$nn
-    rr <- input$rr # API vs GOR correlation
+    n <- n_r()
+    rr <- r_r() # API vs GOR correlation
     nvars <- 5
 
     sigma <- matrix(rep(0, nvars*nvars), nrow = nvars, ncol = nvars) # uncorrelated
@@ -152,14 +331,22 @@ shiny::shinyServer(function(input, output) {
   })
 
   API_r <- shiny::reactive({
-    n <- input$nn
+    n <- n_r()
     seed <- seed_r()
 
-    X_mean <- API_mean_r()
-    X_sd <- API_sd_r()
-    X_distro <- API_distro_r()
-    X_lower <- API_lower_r()
-    X_upper <- API_upper_r()
+    # X_mean <- API_mean_r()
+    # X_sd <- API_sd_r()
+    # X_distro <- API_distro_r()
+    # X_lower <- API_lower_r()
+    # X_upper <- API_upper_r()
+
+    X_distro <- c("normal", "truncated normal", "lognormal",
+                 "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[1, 2]]
+    X_mean <- values$distroparam[1, 3]
+    X_sd <- values$distroparam[1, 4]
+    X_lower <- values$distroparam[1, 5]
+    X_upper <- values$distroparam[1, 6]
+
 
     X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 1],
                                   distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
@@ -167,28 +354,45 @@ shiny::shinyServer(function(input, output) {
     return(X)
   }) # API [deg]
   GOR_r <- shiny::reactive({
-    n <- input$nn
+    n <- n_r()
     seed <- seed_r()
 
-    X_mean <- GOR_mean_r()
-    X_sd <- GOR_sd_r()
-    X_distro <- GOR_distro_r()
-    X_lower <- GOR_lower_r()
-    X_upper <- GOR_upper_r()
+    # X_mean <- GOR_mean_r()
+    # X_sd <- GOR_sd_r()
+    # X_distro <- GOR_distro_r()
+    # X_lower <- GOR_lower_r()
+    # X_upper <- GOR_upper_r()
+
+    var_id <- 2
+    X_distro <- c("normal", "truncated normal", "lognormal",
+                  "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
+    X_mean <- values$distroparam[var_id, 3]
+    X_sd <- values$distroparam[var_id, 4]
+    X_lower <- values$distroparam[var_id, 5]
+    X_upper <- values$distroparam[var_id, 6]
+
     X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 2],
                                 distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
 
     return(X)
   }) # GOR [scf/stb]
   DEPT_err_r <- shiny::reactive({
-    n <- input$nn
+    n <- n_r()
     seed <- seed_r()
 
-    X_mean <- DEPT_err_mean_r()
-    X_sd <- DEPT_err_sd_r()
-    X_distro <- DEPT_err_distro_r()
-    X_lower <- DEPT_err_lower_r()
-    X_upper <- DEPT_err_upper_r()
+    # X_mean <- DEPT_err_mean_r()
+    # X_sd <- DEPT_err_sd_r()
+    # X_distro <- DEPT_err_distro_r()
+    # X_lower <- DEPT_err_lower_r()
+    # X_upper <- DEPT_err_upper_r()
+
+    var_id <- 3
+    X_distro <- c("normal", "truncated normal", "lognormal",
+                  "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
+    X_mean <- values$distroparam[var_id, 3]
+    X_sd <- values$distroparam[var_id, 4]
+    X_lower <- values$distroparam[var_id, 5]
+    X_upper <- values$distroparam[var_id, 6]
 
     X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 3],
                                 distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
@@ -196,14 +400,22 @@ shiny::shinyServer(function(input, output) {
     return(X)
   }) # DEPTH UNCERTAINTY [ft]
   grad_P_r <- shiny::reactive({
-    n <- input$nn
+    n <- n_r()
     seed <- seed_r()
 
-    X_mean <- grad_P_mean_r()
-    X_sd <- grad_P_sd_r()
-    X_distro <- grad_P_distro_r()
-    X_lower <- grad_P_lower_r()
-    X_upper <- grad_P_upper_r()
+    # X_mean <- grad_P_mean_r()
+    # X_sd <- grad_P_sd_r()
+    # X_distro <- grad_P_distro_r()
+    # X_lower <- grad_P_lower_r()
+    # X_upper <- grad_P_upper_r()
+
+    var_id <- 4
+    X_distro <- c("normal", "truncated normal", "lognormal",
+                  "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
+    X_mean <- values$distroparam[var_id, 3]
+    X_sd <- values$distroparam[var_id, 4]
+    X_lower <- values$distroparam[var_id, 5]
+    X_upper <- values$distroparam[var_id, 6]
 
     X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 4],
                                 distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
@@ -211,42 +423,130 @@ shiny::shinyServer(function(input, output) {
     return(X)
   }) # Pressure Gradient [psi/ft]
   grad_T_r <- shiny::reactive({
-    n <- input$nn
+    n <- n_r()
     seed <- seed_r()
 
-    X_mean <- grad_T_mean_r()
-    X_sd <- grad_T_sd_r()
-    X_distro <- grad_T_distro_r()
-    X_lower <- grad_T_lower_r()
-    X_upper <- grad_T_upper_r()
+    # X_mean <- grad_T_mean_r()
+    # X_sd <- grad_T_sd_r()
+    # X_distro <- grad_T_distro_r()
+    # X_lower <- grad_T_lower_r()
+    # X_upper <- grad_T_upper_r()
+
+
+    var_id <- 5
+    X_distro <- c("normal", "truncated normal", "lognormal",
+                  "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
+    X_mean <- values$distroparam[var_id, 3]
+    X_sd <- values$distroparam[var_id, 4]
+    X_lower <- values$distroparam[var_id, 5]
+    X_upper <- values$distroparam[var_id, 6]
 
     X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 5],
                                 distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
     return(X)
   }) # Temperature Gradient [F/100 ft]
+  water_r <- shiny::reactive({
+    n <- n_r()
+    seed <- seed_r()
+
+    # X_mean <- water_mean_r()
+    # X_sd <- water_sd_r()
+    # X_distro <- water_distro_r()
+    # X_lower <- water_lower_r()
+    # X_upper <- water_upper_r()
+    #
+    var_id <- 8
+    X_distro <- c("normal", "truncated normal", "lognormal",
+                  "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
+    X_mean <- values$distroparam[var_id, 3]
+    X_sd <- values$distroparam[var_id, 4]
+    X_lower <- values$distroparam[var_id, 5]
+    X_upper <- values$distroparam[var_id, 6]
+
+    X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 1],
+                                distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
+
+    return(X)
+  }) # Water Salinity [ppm]
+  PRESS_r <- shiny::reactive({
+    n <- n_r()
+    seed <- seed_r()
+
+    # X_mean <- press_mean_r()
+    # X_sd <- press_sd_r()
+    # X_distro <- press_distro_r()
+    # X_lower <- press_lower_r()
+    # X_upper <- press_upper_r()
+    var_id <- 6
+    X_distro <- c("normal", "truncated normal", "lognormal",
+                  "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
+    X_mean <- values$distroparam[var_id, 3]
+    X_sd <- values$distroparam[var_id, 4]
+    X_lower <- values$distroparam[var_id, 5]
+    X_upper <- values$distroparam[var_id, 6]
+
+    X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 1],
+                                distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
+
+    return(X)
+  }) # Reservoir Pressure [psia]
+  TEMP_r <- shiny::reactive({
+    n <- n_r()
+    seed <- seed_r()
+#
+#     X_mean <- temp_mean_r()
+#     X_sd <- temp_sd_r()
+#     X_distro <- temp_distro_r()
+#     X_lower <- temp_lower_r()
+#     X_upper <- temp_upper_r()
+
+    var_id <- 7
+    X_distro <- c("normal", "truncated normal", "lognormal",
+                  "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
+    X_mean <- values$distroparam[var_id, 3]
+    X_sd <- values$distroparam[var_id, 4]
+    X_lower <- values$distroparam[var_id, 5]
+    X_upper <- values$distroparam[var_id, 6]
+
+    X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 1],
+                                distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
+
+    return(X)
+  }) # Reservoir Temperature [F]
 
   DATA_r <- shiny::reactive({
-    n <- input$nn
+    n <- n_r()
+    pt_method <- input$pt_method
+
     CASE <- rep("CASE", n)
     for (i in 1:n) {
       CASE[i] <- ifelse(i < 10, paste0("CASE_00", i), ifelse(i < 100, paste0("CASE_0", i), paste0("CASE_", i)))
     }
+    CORR <- rep(input$fcorr_1, n)
 
     x <- dplyr::data_frame(CASE = CASE) %>%
-      dplyr::mutate(API = API_r(),
+      dplyr::mutate(CORR = CORR,
+                    API = API_r(),
                     GOR = GOR_r(),
                     DEPTH = depth_r() + DEPT_err_r(),
-                    PRESS = DEPTH * grad_P_r(),
-                    TEMP = ifelse(input$offshore == TRUE,
-                                  4 * 1.8 + 32 + (DEPTH - waterdepth_r()) / 100 * grad_T_r(),
-                                  80 + DEPTH / 100 * grad_T_r()),
+                    PRESS = ifelse(pt_method == 0,
+                                ifelse(input$offshore == TRUE,
+                                    input$wd * 0.433 + DEPTH * grad_P_r(),
+                                    (DEPTH + input$gle) * grad_P_r() ),
+                                PRESS_r()),
+                    TEMP = ifelse(pt_method == 0,
+                                ifelse(input$offshore == TRUE,
+                                    input$temp_bottomsea + (DEPTH - input$wd) / 100 * grad_T_r(),
+                                    input$temp_surface + (DEPTH + input$gle) / 100 * grad_T_r()),
+                                TEMP_r()),
                     GRAD_P = grad_P_r(),
-                    GRAD_T = grad_T_r())
+                    GRAD_T = grad_T_r(),
+                    WATER = water_r())
 
     # add MEAN case
-   xm <- dplyr::data_frame(CASE = "CASE_MEAN", API = mean(x$API), GOR = mean(x$GOR),
+   xm <- dplyr::data_frame(CASE = "CASE_MEAN", CORR = input$fcorr_1, API = mean(x$API), GOR = mean(x$GOR),
                            DEPTH = mean(x$DEPTH), PRESS = mean(x$PRESS), TEMP = mean(x$TEMP),
-                           GRAD_P = mean(x$GRAD_P), GRAD_T = mean(x$GRAD_T) )
+                           GRAD_P = mean(x$GRAD_P), GRAD_T = mean(x$GRAD_T), WATER = mean(x$WATER))
 
     colnames(xm) <- colnames(x)
     x <- rbind(x, xm)
@@ -317,28 +617,40 @@ shiny::shinyServer(function(input, output) {
   })
   output$stats_input <- shiny::renderTable({
     temp <- DATA_r()
-    x <- do.call(cbind, lapply(temp[2:ncol(temp)], petroreadr::summary_mod))
+    x <- do.call(cbind, lapply(temp[3:ncol(temp)], petroreadr::summary_mod))
 
-    xx <- as.data.frame(x) %>%
-      dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev")) %>%
-      dplyr::select(Statistic, API, GOR, DEPTH, PRESS, TEMP, GRAD_P, GRAD_T)
+    if (input$pt_method == 0) {
+      xx <- as.data.frame(x) %>%
+        dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev")) %>%
+        dplyr::select(Statistic, API, GOR, DEPTH, PRESS, TEMP, GRAD_P, GRAD_T, WATER)
+    }
+    else {
+      xx <- as.data.frame(x) %>%
+        dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev")) %>%
+        dplyr::select(Statistic, API, GOR, PRESS, TEMP, WATER)
+    }
+
 
     return(xx)
   })
   output$pairs_input <- shiny::renderPlot({
     data <- DATA_r()
-    GGally::ggpairs(data, columns = 2:ncol(data)) +
+    suppressWarnings(GGally::ggpairs(data, columns = input$corr_var)) +
       ggplot2::theme_bw()
   })
   output$depth_plot <- shiny::renderPlot({
     data <- DATA_r()
 
+    p_intercept <- ifelse(input$offshore == TRUE,
+                          (input$wd * 0.433 - 14.7) / mean(data$GRAD_P),
+                          -input$gle - 14.7 / mean(data$GRAD_P))
+
     pres <- ggplot2::ggplot(data) +
       ggplot2::geom_point(ggplot2::aes(x = PRESS, y = DEPTH), alpha = 0.7) +
-      ggplot2::geom_abline(ggplot2::aes(intercept = 14.7 / mean(GRAD_P), slope = -1 / mean(GRAD_P)), color = "darkblue") +
-      ggplot2::geom_abline(ggplot2::aes(intercept = 14.7 / quantile(GRAD_P, 0.9), slope = -1 / quantile(GRAD_P, 0.9)),
+      ggplot2::geom_abline(ggplot2::aes(intercept = p_intercept, slope = -1 / mean(GRAD_P)), color = "darkblue") +
+      ggplot2::geom_abline(ggplot2::aes(intercept = p_intercept, slope = -1 / quantile(GRAD_P, 0.9)),
                            color = "darkblue", linetype = 3) +
-      ggplot2::geom_abline(ggplot2::aes(intercept = 14.7 / quantile(GRAD_P, 0.1), slope = -1 / quantile(GRAD_P, 0.1)),
+      ggplot2::geom_abline(ggplot2::aes(intercept = p_intercept, slope = -1 / quantile(GRAD_P, 0.1)),
                            color = "darkblue", linetype = 3) +
       ggplot2::scale_y_reverse(limits = c(NA , 0)) +
       ggplot2::xlim(0, NA) +
@@ -383,6 +695,51 @@ shiny::shinyServer(function(input, output) {
                       backgroundPosition = 'center')
   })
 
+  # ----------------------------------------------------------------------------
+  output$selectize_corr_var <- renderUI({
+    data <- DATA_r()
+    selectizeInput('corr_var', 'Choose variables to plotted:',
+                   choices = colnames(data[3:ncol(data)]),
+                   multiple = TRUE,
+                   selected = c("API", "GOR"))
+  })
+
+  output$lhs_acc_slider <- renderUI({
+    if (input$sampling_method == 0) {
+      shiny::sliderInput("lhs_accuracy", "LHS Accuracy level:", min = 0.01, max = 1, value = 0.05, step = 0.01)
+    }
+  })
+  output$depth_msl <- renderUI({
+    if (input$pt_method == 0) {
+      if (input$offshore == TRUE) shiny::numericInput('wd', "Water Depth [ft]", 1000, step = 1, min = 0)
+      else shiny::numericInput('gle', "Ground level Elevation [ft]", 500, step = 1, min = 0)
+    }
+  })
+  output$depth_ref <- renderUI({
+    if (input$pt_method == 0) {
+      shiny::numericInput('depth', "Reference Depth [ft.TVDss]:", 8000, step = 10)
+    }
+  })
+  output$depth_offshore <- renderUI({
+    if (input$pt_method == 0) {
+      shiny::checkboxInput("offshore", "Offshore:", FALSE)
+    }
+  })
+  output$depth_temp <- renderUI({
+    if (input$pt_method == 0) {
+      if (input$offshore == TRUE) shiny::numericInput('temp_bottomsea', 'Bottomsea temperature [F]:', 32 + 4 * 1.8)
+      else shiny::numericInput('temp_surface', 'Surface temperature [F]:', 60)
+    }
+  })
+
+
+  output$debug01 <- renderText({
+    # x <- values$distroparam[1,3]
+    # x <- c("normal", "truncated normal", "lognormal",
+    #               "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[1, 2]]
+    x <- summary(API_r())
+    return(x)
+  })
 
 })
 

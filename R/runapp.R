@@ -55,17 +55,17 @@ run_variable <- function(n, mean, sd , method = "RND", lhs = NULL,
   X <- seq(mean, mean, length.out = n) # constant value
   if (method == "RND") {
     if (distro == "normal") X <- rnorm(n, mean, sd)
-    else if (distro == "truncated normal") X <- truncdist::rtrunc(spec = "norm", n, linf = lower, lsup = upper, mean = X_mean, sd = X_sd)
+    else if (distro == "truncated normal") X <- truncdist::rtrunc(spec = "norm", n, linf = lower, lsup = upper, mean = mean, sd = sd)
     else if (distro == "lognormal") X <- rlnorm(n, log(mean), sd)
-    else if (distro == "truncated lognormal") X <- truncdist::rtrunc(spec = "lnorm", n, linf = lower, lsup = upper, mean = log(X_mean), sd = X_sd)
+    else if (distro == "truncated lognormal") X <- truncdist::rtrunc(spec = "lnorm", n, linf = lower, lsup = upper, mean = log(mean), sd = sd)
     else if (distro == "uniform") X <- runif(n, min = lower, max = upper)
     else if (distro == "triangular") X <- mc2d::rtriang(n, min = lower, mode = mean, max = upper)
   }
   else if (method == "LHS") {
     if (distro == "normal") X <- qnorm(lhs, mean, sd)
-    else if (distro == "truncated normal") X <- truncdist::qtrunc(lhs, spec = "norm", mean = X_mean, sd = X_sd, a = X_lower, b = X_upper)
+    else if (distro == "truncated normal") X <- truncdist::qtrunc(lhs, spec = "norm", mean = mean, sd = sd, a = lower, b = upper)
     else if (distro == "lognormal") X <- qlnorm(lhs, log(mean), sd)
-    else if (distro == "truncated lognormal") X <- truncdist::qtrunc(lhs, spec = "lnorm", mean = X_mean, sd = X_sd, a = X_lower, b = X_upper)
+    else if (distro == "truncated lognormal") X <- truncdist::qtrunc(lhs, spec = "lnorm", mean = mean, sd = sd, a = lower, b = upper)
     else if (distro == "uniform") X <- qunif(lhs, min = lower, max = upper)
     else if (distro == "triangular") X <- mc2d::qtriang(lhs, min = lower, mode = mean, max = upper)
   }

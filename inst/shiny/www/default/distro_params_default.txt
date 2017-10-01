@@ -1,0 +1,9 @@
+"variable" "distro" "mean" "sd" "lower" "higher"
+"1" "API" "normal" 25 5 15 40
+"2" "GOR" "normal" 500 200 100 1000
+"3" "Depth Uncertainty" "normal" 100 25 0 200
+"4" "Pressure gradient" "normal" 0.43 0.05 0.4 0.5
+"5" "Temperature gradient" "normal" 1.7 0.1 1.4 3
+"6" "Pressure" "normal" 4000 200 3500 5000
+"7" "Temperature" "normal" 200 10 150 250
+"8" "Water salinity" "normal" 3000 500 1000 10000
