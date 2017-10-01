@@ -1,7 +1,7 @@
 
 require(dplyr)
 require(xlsx)
-require(rJava)
+# require(rJava)
 
 # SERVER
 
@@ -12,29 +12,43 @@ shiny::shinyServer(function(input, output) {
   })
   observe({
     if (input$validate > 0) {
-      wb <- xlsx::loadWorkbook("../extdata/Flamingo.xls")
+      input_data <- as.data.frame(DATA_r())
+      package_path <- system.file(package = "Flamingo")
+      xls_path <- file.path(package_path, "extdata", "Flamingo.xls")
+
+      wb <- xlsx::loadWorkbook(xls_path)
       sheets <- xlsx::getSheets(wb)
 
       cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic=TRUE) # rowcolumns
 
-      xlsx::addDataFrame(DATA_r(), sheet = sheets$X,
+      xlsx::addDataFrame(input_data, sheet = sheets$X,
                    startRow = 1 , startColumn = 1,
                    col.names = TRUE, row.names = FALSE,
                    rownamesStyle = cs1)
-      xlsx::saveWorkbook(wb, "../extdata/Flamingo.xls")
+      xlsx::saveWorkbook(wb, xls_path)
+    }
+  })
+  observe({
+    if (input$open_prosper > 0) {
+      package_path <- system.file(package = "Flamingo")
+      prosper_path <- file.path(package_path, "extdata", "Flamingo.Out")
+      shell.exec(prosper_path)
+      path_to_vbs_file <- "../extdata/Flamingo.vbs"
+      shell(shQuote(normalizePath(path_to_vbs_file)), "cscript", flag = "//nologo")
     }
   })
   observe({
     if (input$run_mc > 0) {
-      path_to_vbs_file <- "../extdata/Flamingo.vbs"
-      shell(shQuote(normalizePath(path_to_vbs_file)), "cscript", flag = "//nologo")
+      package_path <- system.file(package = "Flamingo")
+      vbs_path <- file.path(package_path, "extdata", "Flamingo.vbs")
+      shell(shQuote(normalizePath(vbs_path)), "cscript", flag = "//nologo")
     }
   })
   observe({
     if (input$pt_method == 0) aa <- TRUE
     else aa <- FALSE
     shinyjs::toggle(condition = aa, selector = "#navbar li a[data-value=PTDEPTH]")
-  })
+  }) # hide tab
 
   seed_r <- shiny::reactive({
     x <- input$ss
@@ -523,7 +537,7 @@ shiny::shinyServer(function(input, output) {
     for (i in 1:n) {
       CASE[i] <- ifelse(i < 10, paste0("CASE_00", i), ifelse(i < 100, paste0("CASE_0", i), paste0("CASE_", i)))
     }
-    CORR <- rep(input$fcorr_1, n)
+    CORR <- rep(as.numeric(input$fcorr_1), n)
 
     x <- dplyr::data_frame(CASE = CASE) %>%
       dplyr::mutate(CORR = CORR,
