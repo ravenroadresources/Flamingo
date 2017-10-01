@@ -10,26 +10,26 @@ shiny::shinyServer(function(input, output) {
   observe({
     if (input$close > 0) shiny::stopApp()  # stop shiny
   })
-  # observe({
-  #   if (input$validate > 0) {
-  #     wb <- xlsx::loadWorkbook("../extdata/Flamingo.xls")
-  #     sheets <- xlsx::getSheets(wb)
-  #
-  #     cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic=TRUE) # rowcolumns
-  #
-  #     xlsx::addDataFrame(DATA_r(), sheet = sheets$X,
-  #                  startRow = 1 , startColumn = 1,
-  #                  col.names = TRUE, row.names = FALSE,
-  #                  rownamesStyle = cs1)
-  #     xlsx::saveWorkbook(wb, "../extdata/Flamingo.xls")
-  #   }
-  # })
-  # observe({
-  #   if (input$run_mc > 0) {
-  #     path_to_vbs_file <- "../extdata/Flamingo.vbs"
-  #     shell(shQuote(normalizePath(path_to_vbs_file)), "cscript", flag = "//nologo")
-  #   }
-  # })
+  observe({
+    if (input$validate > 0) {
+      wb <- xlsx::loadWorkbook("../extdata/Flamingo.xls")
+      sheets <- xlsx::getSheets(wb)
+
+      cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic=TRUE) # rowcolumns
+
+      xlsx::addDataFrame(DATA_r(), sheet = sheets$X,
+                   startRow = 1 , startColumn = 1,
+                   col.names = TRUE, row.names = FALSE,
+                   rownamesStyle = cs1)
+      xlsx::saveWorkbook(wb, "../extdata/Flamingo.xls")
+    }
+  })
+  observe({
+    if (input$run_mc > 0) {
+      path_to_vbs_file <- "../extdata/Flamingo.vbs"
+      shell(shQuote(normalizePath(path_to_vbs_file)), "cscript", flag = "//nologo")
+    }
+  })
   observe({
     if (input$pt_method == 0) aa <- TRUE
     else aa <- FALSE

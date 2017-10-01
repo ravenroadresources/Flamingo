@@ -17,6 +17,7 @@ RoxygenNote: 6.0.1
 Imports: shiny,
     shinydashboard,
     rhandsontable,
+    shinyjs,
     dplyr,
     ggplot2,
     gridExtra,
