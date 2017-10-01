@@ -7,13 +7,16 @@ require(xlsx)
 
 shiny::shinyServer(function(input, output) {
 
+  package_path <- system.file(package = "Flamingo")
+  dp_user_path <- file.path(package_path, "shiny", "www", "default", "distro_params_user.txt")
+  dp_def_path <- file.path(package_path, "shiny", "www", "default", "distro_params_default.txt")
+
   observe({
     if (input$close > 0) shiny::stopApp()  # stop shiny
-  })
+  }) # stop shinyapp
   observe({
     if (input$validate > 0) {
       input_data <- as.data.frame(DATA_r())
-      package_path <- system.file(package = "Flamingo")
       xls_path <- file.path(package_path, "extdata", "Flamingo.xls")
 
       wb <- xlsx::loadWorkbook(xls_path)
@@ -27,28 +30,40 @@ shiny::shinyServer(function(input, output) {
                    rownamesStyle = cs1)
       xlsx::saveWorkbook(wb, xls_path)
     }
-  })
+  }) # validate data (write them nto excel)
   observe({
     if (input$open_prosper > 0) {
-      package_path <- system.file(package = "Flamingo")
+      # package_path <- system.file(package = "Flamingo")
       prosper_path <- file.path(package_path, "extdata", "Flamingo.Out")
       shell.exec(prosper_path)
       path_to_vbs_file <- "../extdata/Flamingo.vbs"
       shell(shQuote(normalizePath(path_to_vbs_file)), "cscript", flag = "//nologo")
     }
-  })
+  }) # open prosper
   observe({
     if (input$run_mc > 0) {
-      package_path <- system.file(package = "Flamingo")
+      # package_path <- system.file(package = "Flamingo")
       vbs_path <- file.path(package_path, "extdata", "Flamingo.vbs")
       shell(shQuote(normalizePath(vbs_path)), "cscript", flag = "//nologo")
     }
-  })
+  }) # run simulation
   observe({
     if (input$pt_method == 0) aa <- TRUE
     else aa <- FALSE
     shinyjs::toggle(condition = aa, selector = "#navbar li a[data-value=PTDEPTH]")
   }) # hide tab
+  observe({
+    if (input$dp_set_def > 0) {
+      file.create(dp_user_path)
+      write.table(values$distroparam, file = dp_user_path)
+    }
+  }) # set new default distro params
+  observe({
+    if (input$dp_reset > 0) {
+      file.remove(dp_user_path) # delete file
+      distroparam <- read.table(dp_def_path, header = TRUE)
+    }
+  }) # reset default distro params
 
   seed_r <- shiny::reactive({
     x <- input$ss
@@ -237,36 +252,31 @@ shiny::shinyServer(function(input, output) {
     x <- input$depth
     return(x)
   })
-  # waterdepth_r <- shiny::reactive({
-  #   x <- input$wd
-  #   return(x)
-  # })
 
-  distroparam <- dplyr::data_frame(variable = c("API", "GOR", "Depth Uncertainty", "Pressure gradient",
-                                          "Temperature gradient", "Pressure", "Temperature", "Water salinity"),
-                             distro = factor(rep("normal", 8),
-                                             levels = c("normal", "truncated normal", "lognormal",
-                                                        "truncated lognormal", "uniform", "triangular", "constant value"),
-                                             ordered = TRUE),
-                             mean = c(25, 300, rep(1, 6)),
-                             sd = c(5, 100, rep(1, 6)),
-                             lower = c(20, 100, rep(1, 6)),
-                             higher = c(40, 800, rep(1, 6)))
+  # distroparam <- dplyr::data_frame(variable = c("API", "GOR", "Depth Uncertainty", "Pressure gradient",
+  #                                         "Temperature gradient", "Pressure", "Temperature", "Water salinity"),
+  #                            distro = factor(rep("normal", 8),
+  #                                            levels = c("normal", "truncated normal", "lognormal",
+  #                                                       "truncated lognormal", "uniform", "triangular", "constant value"),
+  #                                            ordered = TRUE),
+  #                            mean = c(25, 300, rep(1, 6)),
+  #                            sd = c(5, 100, rep(1, 6)),
+  #                            lower = c(20, 100, rep(1, 6)),
+  #                            higher = c(40, 800, rep(1, 6)))
 
 
-  # if (!is.null("default/distro_params_user.txt")) {
-  #   distroparam <- read.table("default/distro_params_user.txt", header = TRUE)
-  # }
-  # else if (!is.null("default/distro_params_default.txt")) {
-  #   distroparam <- read.table("default/distro_params_default.txt", header = TRUE)
-  # }
-  # else {
-  #   distroparam <- matrix(seq(NA, 48), nrow = 8)
-  #   colnames(distroparam) <- c("API", "GOR", "Depth Uncertainty", "Pressure gradient",
-  #                              "Temperature gradient", "Pressure", "Temperature", "Water salinity")
-  # }
-
-
+  # variables distributions parameters
+  if (file.exists(dp_user_path)) {
+    distroparam <- read.table(dp_user_path, header = TRUE)
+  }
+  else if (file.exists(dp_def_path)) {
+    distroparam <- read.table(dp_def_path, header = TRUE)
+  }
+  else {
+    distroparam <- matrix(seq(NA, 48), nrow = 8)
+    colnames(distroparam) <- c("API", "GOR", "Depth Uncertainty", "Pressure gradient",
+                               "Temperature gradient", "Pressure", "Temperature", "Water salinity")
+  }
 
   values <- reactiveValues()
 
@@ -305,19 +315,6 @@ shiny::shinyServer(function(input, output) {
         hot_col(col = "distro", type = "dropdown", source = c("normal", "truncated normal", "lognormal",
                                                               "truncated lognormal", "uniform", "triangular", "fixed value"))
   })
-
-  observe({
-    filepath <- system.file(package = "Flamingo")
-    filepath_full <- paste0(filepath, "/shiny/default/distro_params_user.txt")
-    if (input$dp_set_def > 0) write.table(values$distroparam, filepath_full)
-  })
-  observe({
-    filepath <- system.file(package = "Flamingo")
-    filepath_full <- paste0(filepath, "/shiny/default/distro_params_user.txt")
-    if (input$dp_reset > 0) rm(filepath_full) # delete file
-  })
-
-
 
   # ----------------------------------------------------------------------------
   # Latin Hypercube Sampling
@@ -745,6 +742,11 @@ shiny::shinyServer(function(input, output) {
       if (input$offshore == TRUE) shiny::numericInput('temp_bottomsea', 'Bottomsea temperature [F]:', 32 + 4 * 1.8)
       else shiny::numericInput('temp_surface', 'Surface temperature [F]:', 60)
     }
+  })
+  output$button_check_1 <- renderText({
+    x <- NULL
+    if (input$open_prosper > 0) x <- "Data validated!"
+    return(x)
   })
 
 

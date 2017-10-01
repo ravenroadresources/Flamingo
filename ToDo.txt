@@ -4,15 +4,20 @@ ToDo List:
 
 MONTECARLO
 - include differrent sampling methods when generating all variables
-- correlation sensitivity mode
-- workflow: write to excel, open prosper, run openserver, close Prosper?, read results !!!
+- fluid correlation sensitivity mode
+- workflow:
+    ----- write to excel,
+    ----------- open prosper,
+    - run openserver,
+    - close Prosper?,
+    - read results !!!
 - buttons appears or change color or unlocked when certain conditions are met (ie: cannot run openserver if data is not exported )
 - calcualte HC column to GOC from results
 - gas scenario !!!
 - reformat variables input table: rhandsontable:
     ----------- connect table cells to distributions
-    - read default from ascii file
-    - set new params as default / reset
+    ----------- read default from ascii file
+    ----- set new params as default / reset
     - add column to calculated p90 and p10 ??
 - conditional input variables depending on pt_method
 ------------- hide tab P&T vs Depth when direct P&T data option is selected
@@ -26,6 +31,7 @@ MONTECARLO
 - add plots
 ------------ water salinity
 - check gradient in the p and t vs depth plots
+- correct depth calcualtion = ref depth + uncertainty - mean(uncertainty)
 - LHS accuracy: how to check if the LHS does not converge? add a message output
 
 
@@ -34,12 +40,14 @@ ANALOGS
 - cluster analysis
 - heatmap
 - statistics
+- define kitchen or migrastion path to calculate the distance from the kitchen
+- load regional structural map to calculate bouyancy ???
 
 
 GENERAL
 - close button from menu ??
 - report: generate rmarkdown text editable
 - report: knit rmarkdown to html/pdf/powerpoint?
-
+- errors management
 
 

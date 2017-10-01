@@ -280,6 +280,7 @@ shiny::shinyUI(
                 type = "button",
                 class = "btn action-button",
                 "Validate Data", style='width:150px'),
+              shiny::uiOutput("button_check_1"),
               shiny::br(),
               shiny::br(),
               shiny::tags$button(
