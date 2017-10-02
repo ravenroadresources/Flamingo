@@ -6,6 +6,7 @@ utils::globalVariables(c("X_mean", "X_sd", "X_distro", "X_lower", "X_mean", "X_s
 #'    It takes no arguments.
 #'
 #' @importFrom shiny runApp
+#' @importFrom utils browseURL
 #'
 #' @examples
 #' \dontrun{
