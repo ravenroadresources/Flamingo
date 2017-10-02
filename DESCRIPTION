@@ -1,7 +1,7 @@
 Package: Flamingo
 Type: Package
 Title: Fluid Properties Uncertainty Analysis 
-Version: 0.0.23
+Version: 0.0.24
 Author: RavenRoad S.A.S
 Maintainer: Francesco Giorgetti <fg@ravenroadresource.com>
 Description: This package is meant to be a support for the exploration of HC.
@@ -27,8 +27,8 @@ Imports: shiny,
     DT,
     pse,
     GGally,
-    xlsx,
-    readxl
+    readxl,
+    openxlsx
 Suggests: knitr,
     rmarkdown, 
     roxygen2,

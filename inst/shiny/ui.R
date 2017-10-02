@@ -43,25 +43,20 @@ shiny::shinyUI(
       menuItem(HTML("<b>MonteCarlo:</b>"), icon = icon("bar-chart"),
         menuSubItem("Settings", tabName = "_settings", icon = icon("cogs")),
         menuSubItem("Definition", tabName = "_definition", icon = icon("delicious")),
-        # menuSubItem("P&T vs depth", tabName = "_depth", icon = icon("thermometer-half")),
         menuSubItem("Simulation", tabName = "_sim", icon = icon("check-square-o")),
         menuSubItem("Dataset", tabName = "_data", icon = icon("table"))),
       menuItem(HTML("<b>Report:</b>"), tabName = "_report", icon = icon("file-text")),
       menuItem(HTML("<b>Help:</b>"), tabName = "_support", icon = icon("life-buoy")),
-      menuItem(HTML("<b><font color=#ff0000>Close</font></b>"),
+      menuItem(HTML("<b><font color=#ff0000>I/O</font></b>"),
                 shiny::tags$div(id = 'close', "Close",
                                class = "btn action-button",
+                               stile = "text-align: left;",
                                onclick = "setTimeout(function(){window.close();},500);"),
                 shiny::tags$div(id = 'new_session',
                                 class = "btn action-button",
-                                HTML("<a id='new_session' href='./' target='_blank'>New Session</a>")),
+                                HTML("<a id='new_session' href='./'>Reload</a>")), #target='_blank'
                                icon = icon("power-off"))
     )
-    # shiny::tags$div(id = 'close',
-    #   class = "btn action-button",
-    #   onclick = "setTimeout(function(){window.close();},500);",  # close browser
-    #   HTML("<b><font color=#ff0000>Close</font></b>"))
-
   ),
   ######################################################################################
   dashboardBody(
@@ -110,6 +105,8 @@ shiny::shinyUI(
                                     c("Oil" = 0, "Gas" = 1), selected = 0),
                 shiny::radioButtons("fluid_corr_method", "Select type of analysis:",
                                     c("Select one fluid correlation" = 0, "Fluid correlations sensitivity" = 1), selected = 0),
+                shiny::radioButtons("points_method", "Select pressure points:",
+                                    c("Single point" = 0, "Multiple points" = 1), selected = 0),
                 shiny::radioButtons("pt_method", "Pressure and Temperature calculation:",
                                     c("Depth + Gradients" = 0, "Direct Pressure and Temperature" = 1), selected = 0),
                 shiny::uiOutput("depth_ref"),
@@ -135,114 +132,9 @@ shiny::shinyUI(
                            type = "button",
                            class = "btn action-button",
                            "Reset default"),
-
                          br(),
                          verbatimTextOutput("debug01"),
                          br(),
-
-
-                         # fluidRow(
-                         #   column(width = 2, shiny::h5("API")),
-                         #   column(width = 2, shiny::selectInput("API_distro","", choices = list(
-                         #     "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #     selected = "normal")),
-                         #   column(width = 1, shiny::numericInput('API_mean',"", 30, step = 0.5, min = 0.1)),
-                         #   column(width = 1, shiny::numericInput('API_sd', "", 1, step = 0.5, min = 0)),
-                         #   column(width = 1, shiny::numericInput('API_lower', "", 8, step = 0.5, min = 0)),
-                         #   column(width = 1, shiny::numericInput('API_upper', "", 69, step = 0.5, min = 1))
-                         # ),
-                         # fluidRow(
-                         #   column(width = 2,shiny::h5("GOR [scf/stb]")),
-                         #   column(width = 3, shiny::selectInput("API_distro","", choices = list(
-                         #     "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #     selected = "normal")),
-                         #   column(width = 1, shiny::numericInput('GOR_mean',"", 250, step = 0.5, min = 0.1)),
-                         #   column(width = 1, shiny::numericInput('GOR_sd', "", 75, step = 0.5, min = 0)),
-                         #   column(width = 1, shiny::numericInput('GOR_lower', "", 10, step = 0.5, min = 0)),
-                         #   column(width = 1, shiny::numericInput('GOR_upper', "", 1000, step = 0.5, min = 1))
-                         # ),
-
-                         # shiny::tags$table(
-                         #   shiny::tags$tr(
-                         #     shiny::tags$td(shiny::h5("API")),
-                         #     shiny::tags$td(shiny::selectInput("API_distro","", choices = list(
-                         #       "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #       selected = "normal", width = 200)),
-                         #     shiny::tags$td(shiny::numericInput('API_mean',"", 30, step = 0.5, min = 0.1, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('API_sd', "", 1, step = 0.5, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('API_lower', "", 8, step = 0.5, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('API_upper', "", 69, step = 0.5, min = 1, width = 100))
-                         #   ),
-                         #   shiny::tags$tr(
-                         #     shiny::tags$td(shiny::h5("GOR [scf/stb]")),
-                         #     shiny::tags$td(shiny::selectInput("GOR_distro","", choices = list(
-                         #       "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #       selected = "normal", width = 200)),
-                         #     shiny::tags$td(shiny::numericInput('GOR_mean',"", 250, step = 0.5, min = 0.1, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('GOR_sd', "", 75, step = 0.5, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('GOR_lower', "", 10, step = 0.5, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('GOR_upper', "", 1000, step = 0.5, min = 1, width = 100))
-                         #   ),
-                         #   shiny::tags$tr(
-                         #     shiny::tags$td(shiny::h5("Depth Uncertainty [ft]")),
-                         #     shiny::tags$td(shiny::selectInput("DEPT_err_distro","", choices = list(
-                         #       "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #       selected = "normal", width = 200)),
-                         #     shiny::tags$td(shiny::numericInput('DEPT_err_mean',"", 100, step = 5, min = 0, max = 500, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('DEPT_err_sd', "", 25, step = 1, min = 0, max = 200, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('DEPT_err_lower', "", 0, step = 5, min = 0, max = 500, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('DEPT_err_upper', "", 500, step = 5, min = 1, max = 500, width = 100))
-                         #   ),
-                         #   shiny::tags$tr(
-                         #     shiny::tags$td(shiny::h5("Pressure Gradient [psi/ft]")),
-                         #     shiny::tags$td(shiny::selectInput("grad_P_distro","", choices = list(
-                         #       "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #       selected = "normal", width = 200)),
-                         #     shiny::tags$td(shiny::numericInput('grad_P_mean',"", 0.45, step = 0.01, min = 0.3, max = 0.99, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('grad_P_sd', "", 0.02, step = 0.005, min = 0, max = 0.1,width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('grad_P_lower', "", 0.3, step = 0.01, min = 0.3, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('grad_P_upper', "", 0.99, step = 0.01, min = 0.3, width = 100))
-                         #   ),
-                         #   shiny::tags$tr(
-                         #     shiny::tags$td(shiny::h5("Temperature Gradient [F/100ft]")),
-                         #     shiny::tags$td(shiny::selectInput("grad_T_distro","", choices = list(
-                         #       "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #       selected = "normal", width = 200)),
-                         #     shiny::tags$td(shiny::numericInput('grad_T_mean',"", 1.6, step = 0.05, min = 1.2, max = 3, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('grad_T_sd', "", 0.2, step = 0.02, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('grad_T_lower', "", 1.2, step = 0.05, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('grad_T_upper', "", 3, step = 0.05, min = 1, width = 100))
-                         #   ),
-                         #   shiny::tags$tr(
-                         #     shiny::tags$td(shiny::h5("Water Salinity [ppm]")),
-                         #     shiny::tags$td(shiny::selectInput("water_distro","", choices = list(
-                         #       "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #       selected = "normal", width = 200)),
-                         #     shiny::tags$td(shiny::numericInput('water_mean',"", 1.6, step = 0.05, min = 1.2, max = 3, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('water_sd', "", 0.2, step = 0.02, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('water_lower', "", 1.2, step = 0.05, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('water_upper', "", 3, step = 0.05, min = 1, width = 100))
-                         #   ),
-                         #   shiny::tags$tr(
-                         #     shiny::tags$td(shiny::h5("Reservoir Pressure [psia]")),
-                         #     shiny::tags$td(shiny::selectInput("press_distro","", choices = list(
-                         #       "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #       selected = "normal", width = 200)),
-                         #     shiny::tags$td(shiny::numericInput('press_mean',"", 1.6, step = 0.05, min = 1.2, max = 3, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('press_sd', "", 0.2, step = 0.02, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('gpress_lower', "", 1.2, step = 0.05, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('press_upper', "", 3, step = 0.05, min = 1, width = 100))
-                         #   ),
-                         #   shiny::tags$tr(
-                         #     shiny::tags$td(shiny::h5("Reservoir Temperature [F]")),
-                         #     shiny::tags$td(shiny::selectInput("temp_distro","", choices = list(
-                         #       "normal", "truncated normal", "lognormal", "truncated lognormal", "uniform", "triangular", "fixed value"),
-                         #       selected = "normal", width = 200)),
-                         #     shiny::tags$td(shiny::numericInput('temp_mean',"", 1.6, step = 0.05, min = 1.2, max = 3, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('temp_sd', "", 0.2, step = 0.02, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('temp_lower', "", 1.2, step = 0.05, min = 0, width = 100)),
-                         #     shiny::tags$td(shiny::numericInput('temp_upper', "", 3, step = 0.05, min = 1, width = 100))
-                         #   )),
                          shiny::br(),
                          shiny::selectInput("fcorr_1", "Fluid Correlation:",
                                             c("Glaso" = 0, "Standing" = 1, "Lasater" = 2, "VazquezBeggs" = 3,
@@ -275,11 +167,14 @@ shiny::shinyUI(
       ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_sim",
+          tabsetPanel(id = "navbar",
+            tabPanel("Run",
+              shiny::br(),
               shiny::tags$button(
                 id = 'validate',
                 type = "button",
                 class = "btn action-button",
-                "Validate Data", style='width:150px'),
+                "Validate Data", style = 'width:150px'),
               shiny::uiOutput("button_check_1"),
               shiny::br(),
               shiny::br(),
@@ -297,7 +192,27 @@ shiny::shinyUI(
                 "Run Simulation", style='width:150px'),
               shiny::br(),
               shiny::br(),
-              shiny::p("show results after runnning prosper")),
+              actionButton(
+                inputId = 'import_results',
+                # type = "button",
+                # class = "btn action-button",
+                label = "Import results", style='width:150px'),
+              shiny::br(),
+              shiny::br(),
+              shiny::p("show results after runnning prosper"),
+              shiny::br(),
+              shiny::tableOutput("stats_output") ),
+            tabPanel("Histograms",
+                     shiny::br(),
+                     shiny::plotOutput("hist_bovisco"),
+                     shiny::plotOutput("hist_psatcol"),
+                     shiny::plotOutput("hist_dens") ),
+            tabPanel("Column",
+                     shiny::br(),
+                     shiny::plotOutput("plot_oilcol", height = 800) ),
+            tabPanel("Properties vs Pressure"),
+            tabPanel("Fluid Correlations"))
+          ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_report",
               shiny::br(),

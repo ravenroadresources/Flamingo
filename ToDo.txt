@@ -6,11 +6,12 @@ MONTECARLO
 - include differrent sampling methods when generating all variables
 - fluid correlation sensitivity mode
 - workflow:
-    ----- write to excel,
+    ----- write to excel, --> OK if .xlsx
     ----------- open prosper,
     - run openserver,
     - close Prosper?,
-    - read results !!!
+    ---------- read results !!!
+    - TEST openserver with .XLSX
 - buttons appears or change color or unlocked when certain conditions are met (ie: cannot run openserver if data is not exported )
 - calcualte HC column to GOC from results
 - gas scenario !!!
@@ -25,7 +26,7 @@ MONTECARLO
 - make sigma matrix conditional on correlated vs uncorrelated
 ------------- make water dept conditional on offshore
 ------------- add surface pressure and temp in settings (conditional on pt_method)
-- results summary
+------------- results summary
 - actualize DATA_r() with imported results ??
 - run calculation on multiple pressure points
 - add plots
@@ -42,6 +43,7 @@ ANALOGS
 - statistics
 - define kitchen or migrastion path to calculate the distance from the kitchen
 - load regional structural map to calculate bouyancy ???
+- plot log(GOR) vs API
 
 
 GENERAL

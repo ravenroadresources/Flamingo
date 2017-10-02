@@ -1,6 +1,6 @@
 
 require(dplyr)
-require(xlsx)
+# require(xlsx)
 # require(rJava)
 
 # SERVER
@@ -10,6 +10,9 @@ shiny::shinyServer(function(input, output) {
   package_path <- system.file(package = "Flamingo")
   dp_user_path <- file.path(package_path, "shiny", "www", "default", "distro_params_user.txt")
   dp_def_path <- file.path(package_path, "shiny", "www", "default", "distro_params_default.txt")
+  vbs_path <- file.path(package_path, "extdata", "Flamingo.vbs")
+  prosper_path <- file.path(package_path, "extdata", "Flamingo.Out")
+  xls_path <- file.path(package_path, "extdata", "Flamingo.xls")
 
   observe({
     if (input$close > 0) shiny::stopApp()  # stop shiny
@@ -17,35 +20,32 @@ shiny::shinyServer(function(input, output) {
   observe({
     if (input$validate > 0) {
       input_data <- as.data.frame(DATA_r())
-      xls_path <- file.path(package_path, "extdata", "Flamingo.xls")
-
-      wb <- xlsx::loadWorkbook(xls_path)
-      sheets <- xlsx::getSheets(wb)
-
-      cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic=TRUE) # rowcolumns
-
-      xlsx::addDataFrame(input_data, sheet = sheets$X,
-                   startRow = 1 , startColumn = 1,
-                   col.names = TRUE, row.names = FALSE,
-                   rownamesStyle = cs1)
-      xlsx::saveWorkbook(wb, xls_path)
+      if (length(input_data) > 0) {
+        class(input_data$CORR) <- "Number"
+        # wb <- openxlsx::write.xlsx(input_data, file = xls_path, sheetName = "X")
+        wb <- openxlsx::loadWorkbook(xls_path)
+        openxlsx::writeDataTable(wb, sheet = "X", input_data)
+        openxlsx::saveWorkbook(wb, xls_path, overwrite = TRUE)
+      }
+  #
+  #
+  #     wb <- xlsx::loadWorkbook(xls_path)
+  #     sheets <- xlsx::getSheets(wb)
+  #
+  #     cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic=TRUE) # rowcolumns
+  #
+  #     xlsx::addDataFrame(input_data, sheet = sheets$X,
+  #                  startRow = 1 , startColumn = 1,
+  #                  col.names = TRUE, row.names = FALSE,
+  #                  rownamesStyle = cs1)
+  #     xlsx::saveWorkbook(wb, xls_path)
     }
   }) # validate data (write them nto excel)
   observe({
-    if (input$open_prosper > 0) {
-      # package_path <- system.file(package = "Flamingo")
-      prosper_path <- file.path(package_path, "extdata", "Flamingo.Out")
-      shell.exec(prosper_path)
-      path_to_vbs_file <- "../extdata/Flamingo.vbs"
-      shell(shQuote(normalizePath(path_to_vbs_file)), "cscript", flag = "//nologo")
-    }
+    if (input$open_prosper > 0) shell.exec(prosper_path)
   }) # open prosper
   observe({
-    if (input$run_mc > 0) {
-      # package_path <- system.file(package = "Flamingo")
-      vbs_path <- file.path(package_path, "extdata", "Flamingo.vbs")
-      shell(shQuote(normalizePath(vbs_path)), "cscript", flag = "//nologo")
-    }
+    if (input$run_mc > 0) shell(shQuote(normalizePath(vbs_path)), "cscript", flag = "//nologo")
   }) # run simulation
   observe({
     if (input$pt_method == 0) aa <- TRUE
@@ -64,6 +64,11 @@ shiny::shinyServer(function(input, output) {
       distroparam <- read.table(dp_def_path, header = TRUE)
     }
   }) # reset default distro params
+
+  results_r <- eventReactive(input$import_results, {
+    x <- readxl::read_excel(xls_path, sheet = "X")
+    return(x)
+  }) # import results
 
   seed_r <- shiny::reactive({
     x <- input$ss
@@ -252,18 +257,6 @@ shiny::shinyServer(function(input, output) {
     x <- input$depth
     return(x)
   })
-
-  # distroparam <- dplyr::data_frame(variable = c("API", "GOR", "Depth Uncertainty", "Pressure gradient",
-  #                                         "Temperature gradient", "Pressure", "Temperature", "Water salinity"),
-  #                            distro = factor(rep("normal", 8),
-  #                                            levels = c("normal", "truncated normal", "lognormal",
-  #                                                       "truncated lognormal", "uniform", "triangular", "constant value"),
-  #                                            ordered = TRUE),
-  #                            mean = c(25, 300, rep(1, 6)),
-  #                            sd = c(5, 100, rep(1, 6)),
-  #                            lower = c(20, 100, rep(1, 6)),
-  #                            higher = c(40, 800, rep(1, 6)))
-
 
   # variables distributions parameters
   if (file.exists(dp_user_path)) {
@@ -566,12 +559,6 @@ shiny::shinyServer(function(input, output) {
     return(x)
   })
 
-  # read excel data
-  # results_r <- shiny::reactive({
-  #   excelfile <- system.file("extdata", "Flamingo.xls", package = "Flamingo")
-  #   read_excel(excelfile, sheet = "X")
-  # })
-
   # ----------------------------------------------------------------------------
   output$hist_apigor <- shiny::renderPlot({
     data <- DATA_r()
@@ -706,7 +693,140 @@ shiny::shinyServer(function(input, output) {
                       backgroundRepeat = 'no-repeat',
                       backgroundPosition = 'center')
   })
+  output$stats_output <- shiny::renderTable({
+    temp <- results_r()
+    x <- do.call(cbind, lapply(temp[3:ncol(temp)], petroreadr::summary_mod))
 
+    xx <- as.data.frame(x) %>%
+      dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev"))
+
+    return(xx)
+  })
+
+  output$hist_bovisco <- shiny::renderPlot({
+    data <- results_r()
+
+    plot_bo <- ggplot2::ggplot(data, ggplot2::aes(x = BO)) +
+      ggplot2::geom_histogram(ggplot2::aes(x = BO, ..ncount..), color = "grey79", alpha = 0.4, bins = 25) +
+      ggplot2::stat_ecdf(color = "darkred") +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
+      ggplot2::geom_vline(ggplot2::aes(xintercept = mean(BO)), color = "green", linetype = 2) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("[rb/stb]") +
+      ggplot2::ggtitle("Bo")
+
+    plot_visco <- ggplot2::ggplot(data, ggplot2::aes(x = VISCO)) +
+      ggplot2::geom_histogram(ggplot2::aes(x = VISCO, ..ncount..), color = "grey79", alpha = 0.4, bins = 25) +
+      ggplot2::stat_ecdf(color = "darkred") +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
+      ggplot2::geom_vline(ggplot2::aes(xintercept = mean(VISCO)), color = "green", linetype = 2) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("[cP]") +
+      ggplot2::ggtitle("Viscosity")
+
+    gridExtra::grid.arrange(plot_bo, plot_visco, ncol = 2)
+  })
+  output$hist_psatcol <- shiny::renderPlot({
+    data <- results_r()
+
+    plot_psat <- ggplot2::ggplot(data, ggplot2::aes(x = PSAT)) +
+      ggplot2::geom_histogram(ggplot2::aes(x = PSAT, ..ncount..), color = "grey79", alpha = 0.4, bins = 25) +
+      ggplot2::stat_ecdf(color = "darkred") +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
+      ggplot2::geom_vline(ggplot2::aes(xintercept = mean(PSAT)), color = "green", linetype = 2) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("[psia]") +
+      ggplot2::ggtitle("Saturation Pressure")
+
+    plot_oilcol <- ggplot2::ggplot(data, ggplot2::aes(x = OILCOL)) +
+      ggplot2::geom_histogram(ggplot2::aes(x = OILCOL, ..ncount..), color = "grey79", alpha = 0.4, bins = 25) +
+      ggplot2::stat_ecdf(color = "darkred") +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
+      ggplot2::geom_vline(ggplot2::aes(xintercept = mean(OILCOL)), color = "green", linetype = 2) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("[ft]") +
+      ggplot2::ggtitle("Oil Column to GOC")
+
+    gridExtra::grid.arrange(plot_psat, plot_oilcol, ncol = 2)
+  })
+  output$hist_dens <- shiny::renderPlot({
+    data <- results_r()
+
+    plot_deno <- ggplot2::ggplot(data, ggplot2::aes(x = DENO)) +
+      ggplot2::geom_histogram(ggplot2::aes(x = DENO, ..ncount..), color = "grey79", alpha = 0.4, bins = 25) +
+      ggplot2::stat_ecdf(color = "darkred") +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
+      ggplot2::geom_vline(ggplot2::aes(xintercept = mean(DENO)), color = "green", linetype = 2) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("[psi/ft]") +
+      ggplot2::ggtitle("Oil fluid gradient")
+
+    plot_denw <- ggplot2::ggplot(data, ggplot2::aes(x = DENW)) +
+      ggplot2::geom_histogram(ggplot2::aes(x = DENW, ..ncount..), color = "grey79", alpha = 0.4, bins = 25) +
+      ggplot2::stat_ecdf(color = "darkred") +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
+      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
+      ggplot2::geom_vline(ggplot2::aes(xintercept = mean(DENW)), color = "green", linetype = 2) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("[psi/ft]") +
+      ggplot2::ggtitle("Water fluid gradient")
+
+    gridExtra::grid.arrange(plot_deno, plot_denw, ncol = 2)
+  })
+
+  output$plot_oilcol <- shiny::renderPlot({
+    data <- results_r() %>%
+      dplyr::mutate(DD = PRES - PSAT)
+
+    xy <- ggplot2::ggplot(data) +
+      ggplot2::geom_point(ggplot2::aes(x = PRES, y = depth_err - mean(depth_err)), color = "black") +
+      ggplot2::geom_point(ggplot2::aes(x = PSAT, y = OILCOL), color = "orange") +
+      ggplot2::geom_segment(ggplot2::aes(x = mean(PRES), xend = mean(PSAT), y = 0, yend = mean(OILCOL)), color = "darkgreen", linetype = 2) +
+      ggplot2::geom_segment(ggplot2::aes(x = mean(PSAT), xend = mean(PSAT), y = 0, yend = mean(OILCOL)), color = "orange", linetype = 2) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("Pressure [psia]") +
+      ggplot2::ylab("Depth [ft]")
+
+    plot_dd <- ggplot2::ggplot(data) +
+      ggplot2::geom_histogram(ggplot2::aes(x = DD), color = "red", alpha = 0.5) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("Drawdown to Psat [psia]")
+
+    plot_psat <- ggplot2::ggplot(data) +
+      ggplot2::geom_histogram(ggplot2::aes(x = PSAT), color = "orange", alpha = 0.5) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("Psat [psia]")
+
+    plot_oilcol <- ggplot2::ggplot(data) +
+      ggplot2::geom_histogram(ggplot2::aes(x = OILCOL), color = "darkgreen", alpha = 0.5) +
+      ggplot2::theme_bw() +
+      ggplot2::xlab("Oil Column [ft]") +
+      ggplot2::coord_flip()
+
+    plot_void <- ggplot2::ggplot() + ggplot2::geom_blank() + ggplot2::theme_void()
+
+    lay <- rbind(c(1,1,1,1,2,2),
+                 c(3,3,3,3,4,4),
+                 c(3,3,3,3,4,4),
+                 c(3,3,3,3,4,4),
+                 c(5,5,5,5,6,6))
+
+    gridExtra::grid.arrange(plot_psat, plot_void,
+                            xy, plot_oilcol,
+                            plot_dd, plot_void,
+                            ncol = 2, layout_matrix = lay)
+  })
   # ----------------------------------------------------------------------------
   output$selectize_corr_var <- renderUI({
     data <- DATA_r()

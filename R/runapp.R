@@ -13,6 +13,7 @@ utils::globalVariables(c("X_mean", "X_sd", "X_distro", "X_lower", "X_mean", "X_s
 #' }
 #' @export
 run <- function() {
+  browseURL("blank")
   path <- path.package("Flamingo")
   full_path <- paste0(path, "/shiny")
   shiny::runApp(full_path)
