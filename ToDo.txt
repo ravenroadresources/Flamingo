@@ -5,51 +5,56 @@ ToDo List:
 MONTECARLO
 - include differrent sampling methods when generating all variables
 - fluid correlation sensitivity mode
+- run calculation on multiple pressure points
+- add plots ppties vs pressure
+- gas scenario !!!
+- conditional input variables depending on pt_method
+- sigma matrix input !!
+- make sigma matrix conditional on correlated vs uncorrelated
+- actualize DATA_r() with imported results ??
+- check gradient in the p and t vs depth plots
+- correct depth calcualtion = ref depth + uncertainty - mean(uncertainty)
+- LHS accuracy: how to check if the LHS does not converge? add a message output
 - workflow:
     ----- write to excel, --> OK if .xlsx
-    ----------- open prosper,
+    ---------- open prosper,
     - run openserver,
     - close Prosper?,
     ---------- read results !!!
     - TEST openserver with .XLSX
-- buttons appears or change color or unlocked when certain conditions are met (ie: cannot run openserver if data is not exported )
-- calcualte HC column to GOC from results
-- gas scenario !!!
+    - connect to private prosper file??
 - reformat variables input table: rhandsontable:
-    ----------- connect table cells to distributions
-    ----------- read default from ascii file
-    ----- set new params as default / reset
+    ---------- connect table cells to distributions
+    ---------- read default from ascii file
+    ----- set new params as default / reset: ok but rest apply after reloading
     - add column to calculated p90 and p10 ??
-- conditional input variables depending on pt_method
-------------- hide tab P&T vs Depth when direct P&T data option is selected
-- sigma matrix input !!
-- make sigma matrix conditional on correlated vs uncorrelated
-------------- make water dept conditional on offshore
-------------- add surface pressure and temp in settings (conditional on pt_method)
-------------- results summary
-- actualize DATA_r() with imported results ??
-- run calculation on multiple pressure points
-- add plots
------------- water salinity
-- check gradient in the p and t vs depth plots
-- correct depth calcualtion = ref depth + uncertainty - mean(uncertainty)
-- LHS accuracy: how to check if the LHS does not converge? add a message output
+
+--------- water salinity
+---------- make water dept conditional on offshore
+---------- add surface pressure and temp in settings (conditional on pt_method)
+---------- results summary
+---------- hide tab P&T vs Depth when direct P&T data option is selected
+---------- calcualte HC column to GOC and DD from results
 
 
 ANALOGS
-- import data (Excel) and basic manipulation
-- cluster analysis
+---------- import data (Excel) and basic manipulation
+-------- cluster analysis
 - heatmap
-- statistics
-- define kitchen or migrastion path to calculate the distance from the kitchen
+---------- statistics
+- define kitchen or migration path to calculate the distance from the kitchen
 - load regional structural map to calculate bouyancy ???
-- plot log(GOR) vs API
+---------- plot log(GOR) vs API
+- apply button after cluster analysis to transfer cluster families to map page !
+- deal with different formations: filter datas???
 
 
 GENERAL
-- close button from menu ??
+----- close button from menu ??
 - report: generate rmarkdown text editable
 - report: knit rmarkdown to html/pdf/powerpoint?
 - errors management
-
-
+- spinner when calculating things?
+---------- add opening page
+- buttons appears or change color or unlocked when certain conditions are met (ie: cannot run openserver if data is not exported )
+- review excel macro

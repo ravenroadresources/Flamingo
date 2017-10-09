@@ -34,20 +34,21 @@ shiny::shinyUI(
     shinyjs::useShinyjs(),
     h4("Fluid Properties Uncertainty Analysis"),
     hr(),
-    sidebarMenu(selected = "_intro",
+    sidebarMenu(#selected = "_intro",
       menuItem(HTML("<b>Analogs:</b>"), icon = icon("bullseye"),
         menuSubItem("Analogs Data", tabName = "_analogs", icon = icon("puzzle-piece")),
-        menuSubItem("Cluster Analysis", tabName = "_cluster", icon = icon("object-group")),
+        menuSubItem("Statistics", tabName = "_stats", icon = icon("bars")),
         menuSubItem("Heatmap", tabName = "_heatmap", icon = icon("map-o")),
-        menuSubItem("Statistics", tabName = "_stats", icon = icon("bars"))),
+        menuSubItem("Cluster Analysis", tabName = "_cluster", icon = icon("th")) #object-group
+       ),
       menuItem(HTML("<b>MonteCarlo:</b>"), icon = icon("bar-chart"),
         menuSubItem("Settings", tabName = "_settings", icon = icon("cogs")),
         menuSubItem("Definition", tabName = "_definition", icon = icon("delicious")),
-        menuSubItem("Simulation", tabName = "_sim", icon = icon("check-square-o")),
+        menuSubItem("Simulation", tabName = "_sim", icon = icon("refresh")),
         menuSubItem("Dataset", tabName = "_data", icon = icon("table"))),
       menuItem(HTML("<b>Report:</b>"), tabName = "_report", icon = icon("file-text")),
-      menuItem(HTML("<b>Help:</b>"), tabName = "_support", icon = icon("life-buoy")),
-      menuItem(HTML("<b><font color=#ff0000>I/O</font></b>"),
+      menuItem(HTML("<b>Help:</b>"), tabName = "_support", icon = icon("life-buoy"), selected = TRUE),
+      menuItem(HTML("<b><font color=#DD4A39>I/O</font></b>"),
                 shiny::tags$div(id = 'close', "Close",
                                class = "btn action-button",
                                stile = "text-align: left;",
@@ -55,18 +56,78 @@ shiny::shinyUI(
                 shiny::tags$div(id = 'new_session',
                                 class = "btn action-button",
                                 HTML("<a id='new_session' href='./'>Reload</a>")), #target='_blank'
-                               icon = icon("power-off"))
+                               icon = icon("power-off") )
     )
   ),
   ######################################################################################
   dashboardBody(
     tabItems(
-      tabItem(tabName = "_intro",
-              shiny::h3("Flamingo"),
-              shiny::h4("Fluid Properties Uncertainty Analysis")),
-      tabItem(tabName = "_analogs", shiny::p("load data, map")),
+      tabItem(tabName = "_analogs",
+              fileInput('file1', 'Upload .xlsx data file:',
+                        accept = c(".xlsx"),
+                        width= '200%'),
+              br(),
+              DT::dataTableOutput("analogdatatable")),
       #-------------------------------------------------------------------------------
-      tabItem(tabName = "_cluster", shiny::p("cluster analysis")),
+      tabItem(tabName = "_stats", p("Statistics"),
+              shiny::plotOutput("analog_apigor", width = 800, height = 600),
+              shiny::tableOutput("stats_analog")
+      ),
+      #-------------------------------------------------------------------------------
+      tabItem(tabName = "_cluster",
+                tabsetPanel(
+                  tabPanel("Variables",
+                           h5("Covariance Matrix"), br(),
+                           selectInput("cor_method","Select covariance method:",
+                                       choices = list("pearson", "kendall", "spearman"),
+                                       selected = "pearson"),
+                           selectInput("cor_na_method","Select how to treat missing values:",
+                                       choices = list("everything", "all.obs", "complete.obs",
+                                                      "na.or.complete", "pairwise.complete.obs"),
+                                       selected = "complete.obs"),
+                           plotOutput("corrplot", height = 800, width = 800),
+                           br(),
+                           #filtering ??
+                           uiOutput("selectize_name"),
+                           uiOutput("selectize_variable"),
+                           uiOutput("selectize_log"),
+                           checkboxInput("normalize", "Normalize variables before calculating distances.", FALSE),
+                           br(),
+                           plotOutput("dataplot", height = 800, width = 800) ),
+                  tabPanel("Cluster Analysis",
+                           br(),
+                           selectInput("d_method","Select distance method:",
+                                       choices = list("euclidian", "maximum", "manhattan", "canberra", "binary", "minkowski"),
+                                       selected = "euclidian"),
+                           selectInput("h_method","Select agglomeration method:",
+                                       choices = list("complete", "ward.D", "ward.D2", "single", "average", "mcquitty", "median", "centroid"),
+                                       selected = "complete"),
+                           radioButtons("cutoff_method", "", c("Cutoff" = 0, "Number of clusters" = 1)),
+                           uiOutput("cutoff_slider"),
+                           radioButtons("plot_type", "", c("standard" = 0,
+                                                           "ggdendro" = 1,
+                                                           "phylo" = 2,
+                                                           "unrooted" = 3,
+                                                           "fan" = 4)),
+                           br(),
+                           plotOutput("clusterplot", height = 800, width=1000),
+                           plotOutput("clusterplot2", width = 1000) ),
+                  tabPanel("Results",
+                           br(),
+                           selectInput("palette","Colors Palette:",
+                                       choices = list("terrain", "heat", "topo", "cm", "rainbow"),
+                                       selected = "rainbow"),
+                           plotOutput("resultsplot", height = 1600, width = 1600),
+                           br(), br(),
+                           h4("Centroids:"), br(),
+                           dataTableOutput("centroids"),
+                           downloadButton('downloadCentroids', 'Download Centroids'),
+                           br(), br(),
+                           h4("Dataset and Clusters:"), br(),
+                           dataTableOutput("resultstable"),
+                           downloadButton('downloadResults', 'Download Results') )
+                )
+              ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_heatmap", shiny::p("Heat Map"),
               fluidRow(
@@ -77,13 +138,8 @@ shiny::shinyUI(
                        "3 offset 2"
                 )
               )
+              ),
 
-              ),
-      #-------------------------------------------------------------------------------
-      tabItem(tabName = "_stats", p("Statistics"),
-              sidebarPanel(p("sidebar")),
-              mainPanel(p("mainpanel"))
-              ),
       #-------------------------------------------------------------------------------
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_settings",
@@ -154,7 +210,7 @@ shiny::shinyUI(
                          shiny::plotOutput("hist_presstemp")),
                 tabPanel("P&T vs Depth", id = "PTDEPTH", value = "PTDEPTH",
                          shiny::br(),
-                         shiny::plotOutput("depth_plot", height = 600))
+                         shiny::plotOutput("depth_plot", height = 800))
               )
       ),
       #-------------------------------------------------------------------------------
@@ -232,25 +288,35 @@ shiny::shinyUI(
       ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_support",
-              shiny::h3("Analogs"),
-              shiny::h5("import and visualize analogs data"),
-              shiny::br(),
-              shiny::br(),
-              shiny::h3("MonteCarlo"),
-              shiny::h4("Sampling Method"),
-              shiny::h5("Latin Hypercube assure a more uniform distribution of the points in the space.
+              tabsetPanel(
+                tabPanel("About",
+                         br(),
+                         br(),
+                         shiny::img(src = "img/flamingo_logo.png", align = "center", width = '100%'),
+                         br(),
+                         h5("Developed by Francesco Giorgetti - October 2017")
+                         ),
+                tabPanel("Help",
+                         shiny::h3("Analogs"),
+                         shiny::h5("import and visualize analogs data"),
+                         shiny::br(),
+                         shiny::br(),
+                         shiny::h3("MonteCarlo"),
+                         shiny::h4("Sampling Method"),
+                         shiny::h5("Latin Hypercube assure a more uniform distribution of the points in the space.
                         Use it for a reduced number of realizations.
                         For a large number of realizations, it is recommended to use Random sampling."),
-              shiny::br(),
-              shiny::h4("Type of analysis"),
-              shiny::h5("The general purpose analysis is based on one fluid correlation. There is the option to run a
+                         shiny::br(),
+                         shiny::h4("Type of analysis"),
+                         shiny::h5("The general purpose analysis is based on one fluid correlation. There is the option to run a
                         sensitivty on the different fluid correlations: the dataset is rebuilt sampling 25 realizations of the
                         orignal dataset, and this reduced dataset is run with each of the correlations."),
-              shiny::br(),
-              shiny::h4("Pressure and Temperature method"),
-              shiny::h5("Reservoir pressure and tenperature can be introduced directly or calculated from reservoir depth with
+                         shiny::br(),
+                         shiny::h4("Pressure and Temperature method"),
+                         shiny::h5("Reservoir pressure and tenperature can be introduced directly or calculated from reservoir depth with
                         pressure and temperature gradients. The offshore option can be selcted.
-                        Temperature ground level is fixed at 60F, at sea bottom is 39F (4ºC)")
+                        Temperature ground level is fixed at 60F, at sea bottom is 39F (4ºC)") )
+              )
       )
    )
   )

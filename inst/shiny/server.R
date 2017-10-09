@@ -14,6 +14,19 @@ shiny::shinyServer(function(input, output) {
   prosper_path <- file.path(package_path, "extdata", "Flamingo.Out")
   xls_path <- file.path(package_path, "extdata", "Flamingo.xls")
 
+  # load analogs data, or use diamands data set by default
+  analogdata_r <- reactive({
+    data <- diamonds[sample(1:dim(diamonds)[1],100),] #sample of the diamonds dataset
+
+    inFile <- input$file1
+    if (is.null(input$file1)) return(data)
+    # trick to read excel files: need to rename first the file loaded into the temp folder
+    file.rename(inFile$datapath, paste0(inFile$datapath, ".xlsx"))
+    data <- readxl::read_excel(paste0(inFile$datapath, ".xlsx"), sheet=1)
+
+    data <- as.data.frame(data)
+  })
+
   observe({
     if (input$close > 0) shiny::stopApp()  # stop shiny
   }) # stop shinyapp
@@ -67,7 +80,12 @@ shiny::shinyServer(function(input, output) {
 
   results_r <- eventReactive(input$import_results, {
     x <- readxl::read_excel(xls_path, sheet = "X")
-    return(x)
+
+    xx <- x %>%
+      dplyr::mutate(OILCOL = (PRES - PSAT) / DENO,
+                    DD = PRES - PSAT)
+
+    return(xx)
   }) # import results
 
   seed_r <- shiny::reactive({
@@ -314,14 +332,15 @@ shiny::shinyServer(function(input, output) {
   LHS_r <- shiny::reactive({
     n <- n_r()
     rr <- r_r() # API vs GOR correlation
-    nvars <- 5
+    nvars <- ifelse(input$pt_method == 0, 6, 5)
 
     sigma <- matrix(rep(0, nvars*nvars), nrow = nvars, ncol = nvars) # uncorrelated
-    sigma[1,] <- c(1.00,   rr, 0.00, 0.00, 0.00)
-    sigma[2,] <- c(  rr, 1.00, 0.00, 0.00, 0.00)
-    sigma[3,] <- c(0.00, 0.00, 1.00, 0.00, 0.00)
-    sigma[4,] <- c(0.00, 0.00, 0.00, 1.00, 0.00)
-    sigma[5,] <- c(0.00, 0.00, 0.00, 0.00, 1.00)
+    sigma[1,] <- c(1.00,   rr, 0.00, 0.00, 0.00, 0.00)
+    sigma[2,] <- c(  rr, 1.00, 0.00, 0.00, 0.00, 0.00)
+    sigma[3,] <- c(0.00, 0.00, 1.00, 0.00, 0.00, 0.00)
+    sigma[4,] <- c(0.00, 0.00, 0.00, 1.00, 0.00, 0.00)
+    sigma[5,] <- c(0.00, 0.00, 0.00, 0.00, 1.00, 0.00)
+    sigma[6,] <- c(0.00, 0.00, 0.00, 0.00, 0.00, 1.00)
 
     corrLHS <- pse::LHS(factors = nvars, N = n, method = "HL", opts = list(COR = sigma, eps = input$lhs_accuracy))
     XX <- pse::get.data(corrLHS)
@@ -338,12 +357,6 @@ shiny::shinyServer(function(input, output) {
   API_r <- shiny::reactive({
     n <- n_r()
     seed <- seed_r()
-
-    # X_mean <- API_mean_r()
-    # X_sd <- API_sd_r()
-    # X_distro <- API_distro_r()
-    # X_lower <- API_lower_r()
-    # X_upper <- API_upper_r()
 
     X_distro <- c("normal", "truncated normal", "lognormal",
                  "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[1, 2]]
@@ -362,12 +375,6 @@ shiny::shinyServer(function(input, output) {
     n <- n_r()
     seed <- seed_r()
 
-    # X_mean <- GOR_mean_r()
-    # X_sd <- GOR_sd_r()
-    # X_distro <- GOR_distro_r()
-    # X_lower <- GOR_lower_r()
-    # X_upper <- GOR_upper_r()
-
     var_id <- 2
     X_distro <- c("normal", "truncated normal", "lognormal",
                   "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
@@ -384,12 +391,6 @@ shiny::shinyServer(function(input, output) {
   DEPT_err_r <- shiny::reactive({
     n <- n_r()
     seed <- seed_r()
-
-    # X_mean <- DEPT_err_mean_r()
-    # X_sd <- DEPT_err_sd_r()
-    # X_distro <- DEPT_err_distro_r()
-    # X_lower <- DEPT_err_lower_r()
-    # X_upper <- DEPT_err_upper_r()
 
     var_id <- 3
     X_distro <- c("normal", "truncated normal", "lognormal",
@@ -408,12 +409,6 @@ shiny::shinyServer(function(input, output) {
     n <- n_r()
     seed <- seed_r()
 
-    # X_mean <- grad_P_mean_r()
-    # X_sd <- grad_P_sd_r()
-    # X_distro <- grad_P_distro_r()
-    # X_lower <- grad_P_lower_r()
-    # X_upper <- grad_P_upper_r()
-
     var_id <- 4
     X_distro <- c("normal", "truncated normal", "lognormal",
                   "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
@@ -431,13 +426,6 @@ shiny::shinyServer(function(input, output) {
     n <- n_r()
     seed <- seed_r()
 
-    # X_mean <- grad_T_mean_r()
-    # X_sd <- grad_T_sd_r()
-    # X_distro <- grad_T_distro_r()
-    # X_lower <- grad_T_lower_r()
-    # X_upper <- grad_T_upper_r()
-
-
     var_id <- 5
     X_distro <- c("normal", "truncated normal", "lognormal",
                   "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
@@ -453,13 +441,8 @@ shiny::shinyServer(function(input, output) {
   water_r <- shiny::reactive({
     n <- n_r()
     seed <- seed_r()
+    nvar <- ifelse(input$pt_method == 0, 6, 5)
 
-    # X_mean <- water_mean_r()
-    # X_sd <- water_sd_r()
-    # X_distro <- water_distro_r()
-    # X_lower <- water_lower_r()
-    # X_upper <- water_upper_r()
-    #
     var_id <- 8
     X_distro <- c("normal", "truncated normal", "lognormal",
                   "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
@@ -468,7 +451,7 @@ shiny::shinyServer(function(input, output) {
     X_lower <- values$distroparam[var_id, 5]
     X_upper <- values$distroparam[var_id, 6]
 
-    X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 1],
+    X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , nvar],
                                 distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
 
     return(X)
@@ -477,11 +460,6 @@ shiny::shinyServer(function(input, output) {
     n <- n_r()
     seed <- seed_r()
 
-    # X_mean <- press_mean_r()
-    # X_sd <- press_sd_r()
-    # X_distro <- press_distro_r()
-    # X_lower <- press_lower_r()
-    # X_upper <- press_upper_r()
     var_id <- 6
     X_distro <- c("normal", "truncated normal", "lognormal",
                   "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[var_id, 2]]
@@ -490,7 +468,7 @@ shiny::shinyServer(function(input, output) {
     X_lower <- values$distroparam[var_id, 5]
     X_upper <- values$distroparam[var_id, 6]
 
-    X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 1],
+    X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 3],
                                 distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
 
     return(X)
@@ -498,12 +476,6 @@ shiny::shinyServer(function(input, output) {
   TEMP_r <- shiny::reactive({
     n <- n_r()
     seed <- seed_r()
-#
-#     X_mean <- temp_mean_r()
-#     X_sd <- temp_sd_r()
-#     X_distro <- temp_distro_r()
-#     X_lower <- temp_lower_r()
-#     X_upper <- temp_upper_r()
 
     var_id <- 7
     X_distro <- c("normal", "truncated normal", "lognormal",
@@ -513,7 +485,7 @@ shiny::shinyServer(function(input, output) {
     X_lower <- values$distroparam[var_id, 5]
     X_upper <- values$distroparam[var_id, 6]
 
-    X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 1],
+    X <- Flamingo::run_variable(n, X_mean, X_sd, method = sampling_r() , lhs = LHS_r()[ , 4],
                                 distro = X_distro, lower = X_lower, upper = X_upper, seed = seed)
 
     return(X)
@@ -522,12 +494,16 @@ shiny::shinyServer(function(input, output) {
   DATA_r <- shiny::reactive({
     n <- n_r()
     pt_method <- input$pt_method
+    grad_P <- grad_P_r()
+    grad_T <- grad_T_r()
+
 
     CASE <- rep("CASE", n)
     for (i in 1:n) {
       CASE[i] <- ifelse(i < 10, paste0("CASE_00", i), ifelse(i < 100, paste0("CASE_0", i), paste0("CASE_", i)))
     }
     CORR <- rep(as.numeric(input$fcorr_1), n)
+
 
     x <- dplyr::data_frame(CASE = CASE) %>%
       dplyr::mutate(CORR = CORR,
@@ -536,20 +512,20 @@ shiny::shinyServer(function(input, output) {
                     DEPTH = depth_r() + DEPT_err_r(),
                     PRESS = ifelse(pt_method == 0,
                                 ifelse(input$offshore == TRUE,
-                                    input$wd * 0.433 + DEPTH * grad_P_r(),
-                                    (DEPTH + input$gle) * grad_P_r() ),
+                                    14.7 + input$wd * 0.433 + (DEPTH - input$wd) * grad_P,
+                                    14.7 + (DEPTH + input$gle) * grad_P ),
                                 PRESS_r()),
                     TEMP = ifelse(pt_method == 0,
                                 ifelse(input$offshore == TRUE,
-                                    input$temp_bottomsea + (DEPTH - input$wd) / 100 * grad_T_r(),
-                                    input$temp_surface + (DEPTH + input$gle) / 100 * grad_T_r()),
+                                    input$temp_bottomsea + (DEPTH - input$wd) / 100 * grad_T,
+                                    input$temp_surface + (DEPTH + input$gle) / 100 * grad_T),
                                 TEMP_r()),
-                    GRAD_P = grad_P_r(),
-                    GRAD_T = grad_T_r(),
+                    GRAD_P = grad_P,
+                    GRAD_T = grad_T,
                     WATER = water_r())
 
     # add MEAN case
-   xm <- dplyr::data_frame(CASE = "CASE_MEAN", CORR = input$fcorr_1, API = mean(x$API), GOR = mean(x$GOR),
+   xm <- dplyr::data_frame(CASE = "CASE_MEAN", CORR = as.numeric(input$fcorr_1), API = mean(x$API), GOR = mean(x$GOR),
                            DEPTH = mean(x$DEPTH), PRESS = mean(x$PRESS), TEMP = mean(x$TEMP),
                            GRAD_P = mean(x$GRAD_P), GRAD_T = mean(x$GRAD_T), WATER = mean(x$WATER))
 
@@ -641,8 +617,8 @@ shiny::shinyServer(function(input, output) {
     data <- DATA_r()
 
     p_intercept <- ifelse(input$offshore == TRUE,
-                          (input$wd * 0.433 - 14.7) / mean(data$GRAD_P),
-                          -input$gle - 14.7 / mean(data$GRAD_P))
+                          input$wd - (input$wd * 0.433 + 14.7) / mean(data$GRAD_P),
+                          input$gle + (14.7 / mean(data$GRAD_P)))
 
     pres <- ggplot2::ggplot(data) +
       ggplot2::geom_point(ggplot2::aes(x = PRESS, y = DEPTH), alpha = 0.7) +
@@ -827,6 +803,22 @@ shiny::shinyServer(function(input, output) {
                             plot_dd, plot_void,
                             ncol = 2, layout_matrix = lay)
   })
+
+  output$analogdatatable <- DT::renderDataTable({
+    data <- analogdata_r()
+
+    DT::datatable(data, options = list(pageLength = 25))
+  })
+  output$stats_analog <- shiny::renderTable({
+    temp <- analogdata_r()
+    x <- do.call(cbind, lapply(temp[3:ncol(temp)], petroreadr::summary_mod))
+
+    xx <- as.data.frame(x) %>%
+      dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev")) %>%
+      dplyr::select(Statistic, colnames(x))
+
+    return(xx)
+  })
   # ----------------------------------------------------------------------------
   output$selectize_corr_var <- renderUI({
     data <- DATA_r()
@@ -877,6 +869,285 @@ shiny::shinyServer(function(input, output) {
     x <- summary(API_r())
     return(x)
   })
+
+  # ANALOGS
+  # ----------------------------------------------------------------------------
+  records_name_r <- reactive({
+    if (is.null(input$records_name)) return(NULL)
+    input$records_name
+  })
+
+  data_names_r <- reactive({
+    data <- analogdata_r()
+    records_name <- records_name_r()
+
+    # rownames
+    if (is.null(records_name)) temp <- paste0("ID: ",1:dim(data)[1])
+    else { #temp <- data[,records_name]
+      temp <- sapply(data[records_name], paste)
+    }
+
+    return(temp)
+  })
+
+  data_selected_r <- reactive({
+    data <- analogdata_r()
+
+    num_col <- sapply(data, is.numeric)
+    num_data <- data[, num_col]
+
+    # selected
+    if (!is.null(input$variables)) num_data <- num_data[input$variables]
+
+    return(as.data.frame(num_data))
+  })
+
+  data_log_r <- reactive({
+    data <- data_selected_r()
+
+    # log
+    if (!is.null(input$varlog)) {
+      if (length(as.array(input$varlog)) == 1) {
+        data[as.array(input$varlog)] <- log10(data[as.array(input$varlog)])
+      }
+      else {
+        data[as.array(input$varlog)] <- sapply(data[as.array(input$varlog)], log10)
+      }
+      # take log() of the selected columns, and overvrite them
+      # logdata[input$log] <- log10(data[input$log])
+    }
+
+    return(data)
+  })
+
+  data_cluster_r <- reactive({
+    data <- data_log_r()
+
+    # normalize
+    if (input$normalize) {
+      data <- data %>%
+        # mutate_each_(funs(scale(.) %>% as.vector), vars=colnames(data))
+        mutate_each_(funs( ( . - mean(.) ) / sd(.) ), vars = colnames(data))
+    }
+
+    return(as.data.frame(data))
+  })
+
+  ### Custer Algorithm
+  h_r <- reactive({
+    data <- data_cluster_r()
+
+    d <- dist(data, method = input$d_method, upper = TRUE)
+    h <- hclust(d, method = input$h_method)
+  })
+
+  results_r <- reactive({
+    data <- data_cluster_r()
+    h <- h_r()
+
+    if (input$cutoff_method==0) {
+      cutoff <- input$cutoff
+      clusters <- stats::cutree(h, h=cutoff)
+      numclusters<-h$height>cutoff
+    }
+    else {
+      numclusters <- input$numclusters
+      clusters <- stats::cutree(h, k=numclusters)
+    }
+
+    data$cluster <- clusters
+    data
+  })
+
+  centroids_r <- reactive({
+    data_temp <- results_r()
+
+    centroids <- data_temp %>%
+      melt(id.vars=c("cluster")) %>%
+      group_by(cluster, variable) %>%
+      summarise(centroids=mean(value)) %>%
+      cast(cluster ~ variable)
+
+    centroids
+  })
+
+  #////////////////////////////////////////////////////////////////////////////////////////
+  ### OUTPUT:
+
+  # UI
+  output$cutoff_slider <- renderUI({
+    h <- h_r()
+    if (input$cutoff_method==0) {
+      sliderInput("cutoff", "Select height cutoff",
+                  min = 0, max = round(max(h$height), digits=0)+1,
+                  value = max(h$height)/2, step=round(max(h$height)/25, digits=1))
+    }
+    else {
+      sliderInput("numclusters", "Define how many cluster you want to group the data in:",
+                  min = 1, max = 20, value = 3, 1)
+    }
+  })
+  output$selectize_name <- renderUI({
+    data <- analogdata_r()
+    selectizeInput('records_name', 'Choose variable to be used as id:',
+                   choices = colnames(data),
+                   multiple = FALSE)
+  })
+  output$selectize_variable <- renderUI({
+    data <- analogdata_r()
+    num_col <- sapply(data, is.numeric)
+    num_data <- data[, num_col]
+    selectizeInput('variables', 'Select Variables:',
+                   choices = colnames(num_data),
+                   multiple = TRUE)
+  })
+  output$selectize_log <- renderUI({
+    data <- data_selected_r()
+    if (is.null(input$variables)) selectizeInput('varlog', 'Use Log10 (all variables):', choices = colnames(data), multiple=TRUE)
+    else selectizeInput('varlog', 'Use Log10 (selected variables):', choices = colnames(data[input$variables]), multiple=TRUE)
+  })
+
+  # DataTable
+  output$resultstable <- renderDataTable({
+    data <- results_r()
+    data_names <- data_names_r()
+    dataout <- data.frame(data_names, data)
+  }, options = list(pageLength = 10))
+  output$centroids <- renderDataTable({
+    xx <- centroids_r()
+  }, options = list(pageLength = 10))
+
+  # Plot
+  output$analog_apigor <- renderPlot({
+    data <- analogdata_r()
+
+    if ("API" %in% colnames(data) & "GOR" %in% colnames(data)) {
+      ggplot2::ggplot(data) +
+        ggplot2::geom_point(ggplot2::aes(x = API, y = GOR), size = 1.5) +
+        ggplot2::theme_bw() +
+        ggplot2::scale_y_log10()
+    }
+    else NULL
+
+  })
+  output$corrplot <- renderPlot({
+    data <- data_selected_r()
+    data <- as.data.frame(data)
+
+    ggcorr(data, label = TRUE, label_size = 3, label_round = 2,
+           label_alpha = TRUE, method = c(input$cor_na_method, input$cor_method))
+  })
+  output$dataplot <- renderPlot({
+    data <- data_cluster_r()
+    plot(data)
+  })
+  output$clusterplot <- renderPlot({
+    h <- h_r()
+    data <- analogdata_r()
+    results <- results_r()
+    data_names <- data_names_r()
+
+    clusters <- results$cluster
+    numclusters <- max(clusters)
+
+    # h$labels <- sapply(data_names, paste)
+
+    # set color template and number of clusters to divide the palette into
+    # numclusters<-h$height>cutoff
+    numclusters <- sum(numclusters)+2
+    colortemplate <- switch(input$palette,
+                            terrain = c(terrain.colors(numclusters, alpha=1)),
+                            heat = c(heat.colors(numclusters, alpha=1)),
+                            topo =c(topo.colors(numclusters, alpha=1)),
+                            cm = c(cm.colors(numclusters, alpha=1)),
+                            rainbow = c(rainbow(numclusters, alpha=1)))
+
+    if (input$plot_type==0) plot(h, hang = -1, cex = 0.6, labels = data_names)
+    else if (input$plot_type==1) ggdendrogram(h, rotate = FALSE, size = 2)
+    else if (input$plot_type==2) plot(as.phylo(h), type = "cladogram", cex = 0.6, label.offset = 0.5, tip.color = colortemplate[clusters])
+    else if (input$plot_type==3) plot(as.phylo(h), type = "unrooted", cex = 0.6, no.margin = TRUE, tip.color = colortemplate[clusters])
+    else if (input$plot_type==4) plot(as.phylo(h), type = "fan", tip.color = colortemplate[clusters])
+
+
+    # +
+    #   geom_hline(aes(cutoff))
+    # abline(h=cutoff, col="red", lty=2)
+  })
+  output$clusterplot2 <- renderPlot({
+    # data <- data_r()
+    h <- h_r()
+    cutoff <- input$cutoff
+
+    # clusters <- stats::cutree(h, h=cutoff)
+    par(mfrow=c(1,2))
+
+    ## plot1
+    plot(density((h$height)), main="density of branching heights", xlab="", ylab="")
+    abline(v = cutoff, col="red", lty=2)
+
+    ## plot2
+    seq <- seq(0,max(h$height),length.out=20)
+    num <- sapply(seq, function(x){length(unique(stats::cutree(h,h=x)))})
+    plot(seq, num, ylim=c(0,12), xlim=c(0,max(h$height)), xaxt="n", yaxt="n",
+         main="num of clusters (y) when cutting at height (x)",
+         xlab="", ylab="")
+    axis(1,at=seq)
+    axis(2,at=0:max(num))
+    abline(v = cutoff, col="red", lty=2)
+  })
+  output$resultsplot <- renderPlot({
+    data <- analogdata_r()
+    h <- h_r()
+
+    num_col <- sapply(data, is.numeric)
+    num_data <- data[, num_col]
+
+    # selected
+    if (!is.null(input$variables)) num_data <- num_data[input$variables]
+
+    if (input$cutoff_method==0) {
+      cutoff <- input$cutoff
+      clusters <- stats::cutree(h, h=cutoff)
+      numclusters<-h$height>cutoff
+    }
+    else {
+      numclusters <- input$numclusters
+      clusters <- stats::cutree(h, k=numclusters)
+    }
+
+    # set color template and number of clusters to divide the palette into
+    # numclusters<-h$height>cutoff
+    numclusters<-sum(numclusters)+2
+    colortemplate <- switch(input$palette,
+                            terrain = c(terrain.colors(numclusters, alpha=1)),
+                            heat = c(heat.colors(numclusters, alpha=1)),
+                            topo =c(topo.colors(numclusters, alpha=1)),
+                            cm = c(cm.colors(numclusters, alpha=1)),
+                            rainbow = c(rainbow(numclusters, alpha=1)))
+
+    plot(num_data, col=colortemplate[clusters], pch=16, cex=1.8)
+  })
+
+  # Text
+  output$datasummary <- renderText({
+    data <- analogdata_r()
+    temp <- summary(data)
+    t(temp)
+  })
+  output$selectedvars <- renderText({
+    xx <- input$variables
+  })
+
+  # Download Buttons
+  output$downloadResults <- downloadHandler(
+    filename = function() { paste("ClusterAnalysisResults", '.csv', sep='') },
+    content = function(file) { write.csv(results_r(), file) }
+  )
+  output$downloadCentroids <- downloadHandler(
+    filename = function() { paste("ClusterAnalysisCentroids", '.csv', sep='') },
+    content = function(file) { write.csv(centroids_r(), file) }
+  )
+
 
 })
 
