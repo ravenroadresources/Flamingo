@@ -47,7 +47,7 @@ ANALOGS
 ---------- plot log(GOR) vs API
 - apply button after cluster analysis to transfer cluster families to map page !
 - deal with different formations: filter datas???
-
+- saturation families: select with lazo saturation families and use classification as mappable variable
 
 GENERAL
 ----- close button from menu ??

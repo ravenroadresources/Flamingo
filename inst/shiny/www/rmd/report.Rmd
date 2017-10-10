@@ -1,0 +1,17 @@
+---
+title: "Flamingo - Report"
+output: html_document
+params:
+  nn: NA
+---
+
+```{r}
+# The `params` object is available in the document.
+params$nn
+```
+
+A plot of `params$nn` random points.
+
+```{r}
+plot(rnorm(params$nn), rnorm(params$nn))
+```

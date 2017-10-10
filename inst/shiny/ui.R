@@ -37,9 +37,9 @@ shiny::shinyUI(
     sidebarMenu(#selected = "_intro",
       menuItem(HTML("<b>Analogs:</b>"), icon = icon("bullseye"),
         menuSubItem("Analogs Data", tabName = "_analogs", icon = icon("puzzle-piece")),
-        menuSubItem("Statistics", tabName = "_stats", icon = icon("bars")),
-        menuSubItem("Heatmap", tabName = "_heatmap", icon = icon("map-o")),
-        menuSubItem("Cluster Analysis", tabName = "_cluster", icon = icon("th")) #object-group
+        menuSubItem("Saturation Families", tabName = "_satfam", icon = icon("bars")),
+        menuSubItem("Cluster Analysis", tabName = "_cluster", icon = icon("th")), #object-group
+        menuSubItem("Heatmap", tabName = "_heatmap", icon = icon("map-o"))
        ),
       menuItem(HTML("<b>MonteCarlo:</b>"), icon = icon("bar-chart"),
         menuSubItem("Settings", tabName = "_settings", icon = icon("cogs")),
@@ -63,15 +63,27 @@ shiny::shinyUI(
   dashboardBody(
     tabItems(
       tabItem(tabName = "_analogs",
-              fileInput('file1', 'Upload .xlsx data file:',
-                        accept = c(".xlsx"),
-                        width= '200%'),
-              br(),
-              DT::dataTableOutput("analogdatatable")),
+              tabsetPanel(
+                tabPanel("Data",
+                    br(),
+                    fileInput('file1', 'Upload .xlsx data file:',
+                              accept = c(".xlsx"),
+                              width= '200%'),
+                    br(),
+                    DT::dataTableOutput("analogdatatable")),
+                tabPanel("Correction",
+                         br(),
+                         p("Correct Fluid properties to a reference Pressure and Temperature")
+                ),
+                tabPanel("Statistics",
+                    br(),
+                    shiny::tableOutput("stats_analog") ))
+              ),
       #-------------------------------------------------------------------------------
-      tabItem(tabName = "_stats", p("Statistics"),
+      tabItem(tabName = "_satfam",
               shiny::plotOutput("analog_apigor", width = 800, height = 600),
-              shiny::tableOutput("stats_analog")
+              br(),
+              p("select with lazo saturation families and use classification as mappable variable")
       ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_cluster",
@@ -110,14 +122,14 @@ shiny::shinyUI(
                                                            "unrooted" = 3,
                                                            "fan" = 4)),
                            br(),
-                           plotOutput("clusterplot", height = 800, width=1000),
-                           plotOutput("clusterplot2", width = 1000) ),
+                           plotOutput("clusterplot", height = 800, width = 800),
+                           plotOutput("clusterplot2", width = 800) ),
                   tabPanel("Results",
                            br(),
                            selectInput("palette","Colors Palette:",
                                        choices = list("terrain", "heat", "topo", "cm", "rainbow"),
                                        selected = "rainbow"),
-                           plotOutput("resultsplot", height = 1600, width = 1600),
+                           plotOutput("resultsplot", height = 800, width = 800),
                            br(), br(),
                            h4("Centroids:"), br(),
                            dataTableOutput("centroids"),
@@ -271,21 +283,30 @@ shiny::shinyUI(
           ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_report",
-              shiny::br(),
-              checkboxGroupInput("report_items", "Select Analysis to include in the report:",
-                c("Analogs", "MonteCarlo", "histograms", "P&T vs depth", "Correlations"),
-                selected = c("MonteCarlo", "histograms")),
-              shiny::tags$button(
-                id = 'edit_report',
-                type = "button",
-                class = "btn action-button",
-                "Edit Report"),
-              shiny::tags$button(
-                id = 'generate_report',
-                type = "button",
-                class = "btn action-button",
-                "Generate Report")
-      ),
+              shiny::sidebarPanel(
+                shiny::br(),
+                checkboxGroupInput("report_items", "Select Analysis to include in the report:",
+                                   c("Analogs", "MonteCarlo", "histograms", "P&T vs depth", "Correlations"),
+                                   selected = c("MonteCarlo", "histograms")),
+                shiny::tags$button(
+                  id = 'edit_report',
+                  type = "button",
+                  class = "btn action-button",
+                  "Edit Report"),
+                # downloadButton("report", "Generate report")
+                actionButton("report", "Generate report")
+                #         shiny::tags$button(
+                #           id = 'generate_report',
+                #           type = "button",
+                #           class = "btn action-button",
+                #           "Generate Report")
+              ),
+              shiny::mainPanel(
+                # shiny::a(href = output$report_path)
+                # shiny::a(href = "shiny/www/rmd/report.html")
+                shiny::includeMarkdown("www/rmd/report.Rmd")
+              )
+              ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_support",
               tabsetPanel(
@@ -294,7 +315,18 @@ shiny::shinyUI(
                          br(),
                          shiny::img(src = "img/flamingo_logo.png", align = "center", width = '100%'),
                          br(),
-                         h5("Developed by Francesco Giorgetti - October 2017")
+                         h5("Developed by Francesco Giorgetti - October 2017"),
+                         br(),
+                         h6("Flamingo software has 2 main core areas: the first deals with regional analog fluid data to try to define patterns and
+                            predict the API and GOR of new prospects; the second is an aimplementation of a montacarlo simulation which estimate the
+                            uncertainty ranges of fluid porperties in a consistent way."),
+                         h6("The two areas are independent and can work standalone, but ideally the workflow is try to capture and narrow the API and GOR
+                            expected range for a defined prospect using data analytics techniques, such as cluster analysis, and then pass those ranges
+                            to the simulator to obtain derived fluid properties."),
+                         h6("The montecarlo simulator deliberately relies on the Prosper software: that way it is possible to refine and match the
+                            fluid correlation to regional data using a consolidated industry plaftorm to obtain an even more accurate prediction
+                            of fluid properties."),
+                         h6("Flamingo automatically generate a report of all the analys performed.")
                          ),
                 tabPanel("Help",
                          shiny::h3("Analogs"),
@@ -315,7 +347,13 @@ shiny::shinyUI(
                          shiny::h4("Pressure and Temperature method"),
                          shiny::h5("Reservoir pressure and tenperature can be introduced directly or calculated from reservoir depth with
                         pressure and temperature gradients. The offshore option can be selcted.
-                        Temperature ground level is fixed at 60F, at sea bottom is 39F (4ºC)") )
+                        Temperature ground level is fixed at 60F, at sea bottom is 39F (4ºC)") ),
+                tabPanel("Credits",
+                         h5("Packages dependecy:"),
+                         h6("Imports: shiny, shinydashboard, rhandsontable, shinyjs, dplyr, ggplot2, gridExtra, truncdist, mc2d,
+                              petroreadr, DT, pse, GGally, readxl, openxlsx"),
+                         h6("Suggests: knitr, rmarkdown, roxygen2, testthat")
+                         )
               )
       )
    )
