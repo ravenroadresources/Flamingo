@@ -16,6 +16,10 @@ shiny::shinyServer(function(input, output) {
   rmd_path <- file.path(package_path, "shiny", "www", "rmd", "report.Rmd")
   report_path <- file.path(package_path, "shiny", "www", "rmd", "report.html")
 
+  rsource_mc_path <- file.path(package_path, "shiny", "www", "mc.R")
+  rsource_analog_path <- file.path(package_path, "shiny", "www", "analog.R")
+  rsource_report_path <- file.path(package_path, "shiny", "www", "report.R")
+
   # output$report_path <- shiny::renderText({
   #   x <- report_path
   #   return(x)
@@ -26,11 +30,11 @@ shiny::shinyServer(function(input, output) {
   }) # stop shinyapp
 
   # ANALOGS
-  source("www/mc.R", local = TRUE)
+  source(rsource_mc_path, local = TRUE)
   # ANALOGS
-  source("www/analog.R", local = TRUE)
+  source(rsource_analog_path, local = TRUE)
   # REPORT
-  source("www/report.R", local = TRUE)
+  source(rsource_report_path, local = TRUE)
 
 
 

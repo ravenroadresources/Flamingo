@@ -133,12 +133,22 @@ LHS_r <- shiny::reactive({
   nvars <- ifelse(input$pt_method == 0, 6, 5)
 
   sigma <- matrix(rep(0, nvars*nvars), nrow = nvars, ncol = nvars) # uncorrelated
-  sigma[1,] <- c(1.00,   rr, 0.00, 0.00, 0.00, 0.00)
-  sigma[2,] <- c(  rr, 1.00, 0.00, 0.00, 0.00, 0.00)
-  sigma[3,] <- c(0.00, 0.00, 1.00, 0.00, 0.00, 0.00)
-  sigma[4,] <- c(0.00, 0.00, 0.00, 1.00, 0.00, 0.00)
-  sigma[5,] <- c(0.00, 0.00, 0.00, 0.00, 1.00, 0.00)
-  sigma[6,] <- c(0.00, 0.00, 0.00, 0.00, 0.00, 1.00)
+
+  if(input$pt_method == 0) {
+    sigma[1,] <- c(1.00,   rr, 0.00, 0.00, 0.00, 0.00)
+    sigma[2,] <- c(  rr, 1.00, 0.00, 0.00, 0.00, 0.00)
+    sigma[3,] <- c(0.00, 0.00, 1.00, 0.00, 0.00, 0.00)
+    sigma[4,] <- c(0.00, 0.00, 0.00, 1.00, 0.00, 0.00)
+    sigma[5,] <- c(0.00, 0.00, 0.00, 0.00, 1.00, 0.00)
+    sigma[6,] <- c(0.00, 0.00, 0.00, 0.00, 0.00, 1.00)
+  } else {
+    sigma[1,] <- c(1.00,   rr, 0.00, 0.00, 0.00)
+    sigma[2,] <- c(  rr, 1.00, 0.00, 0.00, 0.00)
+    sigma[3,] <- c(0.00, 0.00, 1.00, 0.00, 0.00)
+    sigma[4,] <- c(0.00, 0.00, 0.00, 1.00, 0.00)
+    sigma[5,] <- c(0.00, 0.00, 0.00, 0.00, 1.00)
+  }
+
 
   corrLHS <- pse::LHS(factors = nvars, N = n, method = "HL", opts = list(COR = sigma, eps = input$lhs_accuracy))
   XX <- pse::get.data(corrLHS)
@@ -291,7 +301,6 @@ TEMP_r <- shiny::reactive({
 
 DATA_r <- shiny::reactive({
   n <- n_r()
-  pt_method <- input$pt_method
   grad_P <- grad_P_r()
   grad_T <- grad_T_r()
 
@@ -308,19 +317,22 @@ DATA_r <- shiny::reactive({
                   API = API_r(),
                   GOR = GOR_r(),
                   DEPTH = depth_r() + DEPT_err_r(),
-                  PRESS = ifelse(pt_method == 0,
-                                 ifelse(input$offshore == TRUE,
-                                        14.7 + input$wd * 0.433 + (DEPTH - input$wd) * grad_P,
-                                        14.7 + (DEPTH + input$gle) * grad_P ),
-                                 PRESS_r()),
-                  TEMP = ifelse(pt_method == 0,
-                                ifelse(input$offshore == TRUE,
-                                       input$temp_bottomsea + (DEPTH - input$wd) / 100 * grad_T,
-                                       input$temp_surface + (DEPTH + input$gle) / 100 * grad_T),
-                                TEMP_r()),
+                  PRESS = PRESS_r(),
+                  TEMP = TEMP_r(),
                   GRAD_P = grad_P,
                   GRAD_T = grad_T,
                   WATER = water_r())
+
+  if(input$pt_method == 0) {
+    if(input$offshore == TRUE) {
+      x$PRESS <- 14.7 + input$wd * 0.433 + (x$DEPTH - input$wd) * grad_P
+      x$TEMP <- input$temp_bottomsea + (x$DEPTH - input$wd) / 100 * grad_T
+    } else {
+      x$PRESS <- 14.7 + (x$DEPTH + input$gle) * grad_P
+      x$TEMP <- input$temp_surface + (x$DEPTH + input$gle) / 100 * grad_T
+    }
+  }
+
 
   # add MEAN case
   xm <- dplyr::data_frame(CASE = "CASE_MEAN", CORR = as.numeric(input$fcorr_1), API = mean(x$API), GOR = mean(x$GOR),
@@ -645,10 +657,21 @@ output$button_check_1 <- renderText({
 })
 
 
-output$debug01 <- renderText({
+output$debug01 <- renderTable({
   # x <- values$distroparam[1,3]
   # x <- c("normal", "truncated normal", "lognormal",
   #               "truncated lognormal", "uniform", "triangular", "fixed value")[values$distroparam[1, 2]]
-  x <- summary(API_r())
+  # x <- summary(API_r())
+  # x <- c(input$depth,
+  #         input$wd,
+  #         input$gle,
+  #         "temp",
+  #         input$temp_bottomsea,
+  #         input$temp_surface,
+  #         "offshore?",
+  #         input$offshore)
+
+  x <-  LHS_r()
+
   return(x)
 })
