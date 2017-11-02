@@ -12,8 +12,9 @@ MONTECARLO
 - sigma matrix input !!
 - make sigma matrix conditional on correlated vs uncorrelated
 - actualize DATA_r() with imported results ??
-- check gradient in the p and t vs depth plots
-- correct depth calcualtion = ref depth + uncertainty - mean(uncertainty)
+----- oilcolumn plot: correct left axis to align plots,  check DD x axis scale
+---------- check gradient in the p and t vs depth plots
+---------- correct depth calcualtion = ref depth + uncertainty - mean(uncertainty)
 - LHS accuracy: how to check if the LHS does not converge? add a message output
 - workflow:
     ----- write to excel, --> OK if .xlsx
@@ -27,9 +28,9 @@ MONTECARLO
     ---------- connect table cells to distributions
     ---------- read default from ascii file
     ----- set new params as default / reset: ok but rest apply after reloading
-    - add column to calculated p90 and p10 ??
+    - add column with calculated p90 and p10 ??
 
---------- water salinity
+---------- water salinity
 ---------- make water dept conditional on offshore
 ---------- add surface pressure and temp in settings (conditional on pt_method)
 ---------- results summary

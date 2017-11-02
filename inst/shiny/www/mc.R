@@ -430,6 +430,10 @@ output$depth_plot <- shiny::renderPlot({
                         input$wd - (input$wd * 0.433 + 14.7) / mean(data$GRAD_P),
                         input$gle + (14.7 / mean(data$GRAD_P)))
 
+  t_intercept <- ifelse(input$offshore == TRUE,
+                        -input$wd + 39.2 / mean(data$GRAD_T) *100,
+                        input$gle + (input$temp_surface / mean(data$GRAD_T) * 100))
+
   pres <- ggplot2::ggplot(data) +
     ggplot2::geom_point(ggplot2::aes(x = PRESS, y = DEPTH), alpha = 0.7) +
     ggplot2::geom_abline(ggplot2::aes(intercept = p_intercept, slope = -1 / mean(GRAD_P)), color = "darkblue") +
@@ -448,7 +452,11 @@ output$depth_plot <- shiny::renderPlot({
     ggplot2::geom_point(ggplot2::aes(x = TEMP, y = DEPTH), color = "red", alpha = 0.7) +
     ggplot2::scale_y_reverse(limits = c(NA, 0)) +
     ggplot2::xlim(0, NA) +
-    ggplot2::geom_abline(ggplot2::aes(intercept = 0, slope = -1 / mean(GRAD_T) * 100 * 0.3048), color = "darkred") +
+    ggplot2::geom_abline(ggplot2::aes(intercept = t_intercept, slope = -1 / mean(GRAD_T) * 100 ), color = "darkred") +
+    ggplot2::geom_abline(ggplot2::aes(intercept = t_intercept, slope = -1 / quantile(GRAD_T, 0.9) * 100 ),
+                         color = "darkred", linetype = 3) +
+    ggplot2::geom_abline(ggplot2::aes(intercept = t_intercept, slope = -1 / quantile(GRAD_T, 0.1) * 100 ),
+                         color = "darkred", linetype = 3) +
     ggplot2::ggtitle("Temperature") +
     ggplot2::xlab("F") +
     ggplot2::ylab("ft.TVDss") +
@@ -575,28 +583,46 @@ output$plot_oilcol <- shiny::renderPlot({
   data <- results_r() %>%
     dplyr::mutate(DD = PRES - PSAT)
 
+  oilcol_lim <- c(min(data$depth_err), max(data$OILCOL))
+  press_lim <- c(0, max(data$PRES))
+  dd_lim <- c(mean(data$DD) + mean(data$PSAT), mean(data$DD) + mean(data$PSAT) - press_lim[2])
+
   xy <- ggplot2::ggplot(data) +
-    ggplot2::geom_point(ggplot2::aes(x = PRES, y = depth_err - mean(depth_err)), color = "black") +
+    ggplot2::geom_point(ggplot2::aes(x = PRES, y = depth_err), color = "black") +
     ggplot2::geom_point(ggplot2::aes(x = PSAT, y = OILCOL), color = "orange") +
     ggplot2::geom_segment(ggplot2::aes(x = mean(PRES), xend = mean(PSAT), y = 0, yend = mean(OILCOL)), color = "darkgreen", linetype = 2) +
     ggplot2::geom_segment(ggplot2::aes(x = mean(PSAT), xend = mean(PSAT), y = 0, yend = mean(OILCOL)), color = "orange", linetype = 2) +
     ggplot2::theme_bw() +
+    ggplot2::theme(plot.margin = ggplot2::margin(c(5.5, 5.5, 5.5, 10), "points")) +
+    ggplot2::xlim(press_lim) +
+    ggplot2::ylim(oilcol_lim) +
     ggplot2::xlab("Pressure [psia]") +
     ggplot2::ylab("Depth [ft]")
 
   plot_dd <- ggplot2::ggplot(data) +
-    ggplot2::geom_histogram(ggplot2::aes(x = DD), color = "red", alpha = 0.5) +
+    ggplot2::geom_histogram(ggplot2::aes(x = DD), color = "grey27", fill = "red", alpha = 0.5) +
+    ggplot2::scale_x_reverse(limits = dd_lim) +
     ggplot2::theme_bw() +
+    ggplot2::theme(plot.margin = ggplot2::margin(c(5.5, 5.5, 5.5, 20), "points")) +
     ggplot2::xlab("Drawdown to Psat [psia]")
 
   plot_psat <- ggplot2::ggplot(data) +
-    ggplot2::geom_histogram(ggplot2::aes(x = PSAT), color = "orange", alpha = 0.5) +
+    ggplot2::geom_histogram(ggplot2::aes(x = PSAT), color = "grey27", fill = "orange", alpha = 0.5) +
+    ggplot2::xlim(press_lim) +
     ggplot2::theme_bw() +
+    ggplot2::theme(plot.margin = ggplot2::margin(c(5.5, 5.5, 5.5, 20), "points")) +
     ggplot2::xlab("Psat [psia]")
 
-  plot_oilcol <- ggplot2::ggplot(data) +
-    ggplot2::geom_histogram(ggplot2::aes(x = OILCOL), color = "darkgreen", alpha = 0.5) +
+  plot_oilcol <- ggplot2::ggplot(data, ggplot2::aes(x = OILCOL)) +
+    ggplot2::geom_histogram(ggplot2::aes(x = OILCOL, ..ncount..), fill = "darkgreen", alpha = 0.4, color = "grey27") +
+    ggplot2::stat_ecdf(color = "black") +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
+    ggplot2::geom_vline(ggplot2::aes(xintercept = mean (OILCOL)), color = "red", linetype = 2) +
     ggplot2::theme_bw() +
+    ggplot2::theme(plot.margin = ggplot2::margin(c(5.5, 5.5, 5.5, 10), "points")) +
+    ggplot2::xlim(oilcol_lim) +
     ggplot2::xlab("Oil Column [ft]") +
     ggplot2::coord_flip()
 
