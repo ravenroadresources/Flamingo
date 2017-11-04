@@ -1,6 +1,7 @@
 # load analogs data, or use diamands data set by default
 analogdata_r <- reactive({
-  data <- ggplot2::diamonds[sample(1:dim(ggplot2::diamonds)[1],100),] #sample of the diamonds dataset
+  # data <- ggplot2::diamonds[sample(1:dim(ggplot2::diamonds)[1],100),] #sample of the diamonds dataset
+  data <- readxl::read_excel(analog_default_path, sheet = 1)
 
   inFile <- input$file1
   if (is.null(input$file1)) return(data)
@@ -113,7 +114,7 @@ centroids_r <- reactive({
 ### OUTPUT:
 
 # UI
-output$cutoff_slider <- renderUI({
+output$cutoff_slider <- shiny::renderUI({
   h <- h_r()
   if (input$cutoff_method==0) {
     sliderInput("cutoff", "Select height cutoff",
@@ -125,13 +126,13 @@ output$cutoff_slider <- renderUI({
                 min = 1, max = 20, value = 3, 1)
   }
 })
-output$selectize_name <- renderUI({
+output$selectize_name <- shiny::renderUI({
   data <- analogdata_r()
   selectizeInput('records_name', 'Choose variable to be used as id:',
                  choices = colnames(data),
                  multiple = FALSE)
 })
-output$selectize_variable <- renderUI({
+output$selectize_variable <- shiny::renderUI({
   data <- analogdata_r()
   num_col <- sapply(data, is.numeric)
   num_data <- data[, num_col]
@@ -139,10 +140,15 @@ output$selectize_variable <- renderUI({
                  choices = colnames(num_data),
                  multiple = TRUE)
 })
-output$selectize_log <- renderUI({
+output$selectize_log <- shiny::renderUI({
   data <- data_selected_r()
   if (is.null(input$variables)) selectizeInput('varlog', 'Use Log10 (all variables):', choices = colnames(data), multiple=TRUE)
   else selectizeInput('varlog', 'Use Log10 (selected variables):', choices = colnames(data[input$variables]), multiple=TRUE)
+})
+output$map_variable <- shiny::renderUI({
+  data <- analogdata_r()
+  # shiny::selectInput("map_var", "Select Variable to plot on the map:", c(colnames(data), "cluster"))
+  selectizeInput('map_var', 'Select Variable to plot on the map:', choices = c(colnames(data), "cluster"), multiple = FALSE)
 })
 
 # DataTable
@@ -265,6 +271,30 @@ output$resultsplot <- renderPlot({
 
   plot(num_data, col=colortemplate[clusters], pch=16, cex=1.8)
 })
+
+# Map
+output$map <- leaflet::renderLeaflet({
+  rawdata <- analogdata_r()
+  resdata <- analogresults_r()
+  data <- rawdata %>%
+    dplyr::mutate(cluster = resdata$cluster)
+
+  p <- leaflet::leaflet(data) %>%
+    leaflet::addProviderTiles(input$mapstyle) %>%
+    leaflet::fitBounds(~min(LONG), ~min(LAT), ~max(LONG), ~max(LAT))
+
+    p <- p %>%
+      leaflet::addCircleMarkers(~LONG, ~LAT ,
+                       radius = 10,
+                       color = "darkred",
+                       stroke = TRUE,
+                       fillOpacity = 0.2,
+                       popup = ~as.character(input$map_var))
+
+
+  p
+})
+
 
 # Text
 output$datasummary <- renderText({

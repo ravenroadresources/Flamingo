@@ -9,10 +9,10 @@ MONTECARLO
 - add plots ppties vs pressure
 - gas scenario !!!
 - conditional input variables depending on pt_method
-- sigma matrix input !!
-- make sigma matrix conditional on correlated vs uncorrelated
+------ sigma matrix input !!
+----------- make sigma matrix conditional on correlated vs uncorrelated
 - actualize DATA_r() with imported results ??
------ oilcolumn plot: correct left axis to align plots,  check DD x axis scale
+---------- oilcolumn plot: correct left axis to align plots,  check DD x axis scale
 ---------- check gradient in the p and t vs depth plots
 ---------- correct depth calcualtion = ref depth + uncertainty - mean(uncertainty)
 - LHS accuracy: how to check if the LHS does not converge? add a message output
@@ -41,6 +41,7 @@ MONTECARLO
 ANALOGS
 ---------- import data (Excel) and basic manipulation
 -------- cluster analysis
+- add statistic per cluster
 - heatmap
 ---------- statistics
 - define kitchen or migration path to calculate the distance from the kitchen

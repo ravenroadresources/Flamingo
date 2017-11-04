@@ -3,24 +3,26 @@ observe({
   if (input$validate > 0) {
     input_data <- as.data.frame(DATA_r())
     if (length(input_data) > 0) {
-      class(input_data$CORR) <- "Number"
-      # wb <- openxlsx::write.xlsx(input_data, file = xls_path, sheetName = "X")
-      wb <- openxlsx::loadWorkbook(xls_path)
-      openxlsx::writeDataTable(wb, sheet = "X", input_data)
-      openxlsx::saveWorkbook(wb, xls_path, overwrite = TRUE)
+
+      # version for .xlsX file
+      # class(input_data$CORR) <- "Number"
+      # # wb <- openxlsx::write.xlsx(input_data, file = xls_path, sheetName = "X")
+      # wb <- openxlsx::loadWorkbook(xls_path)
+      # openxlsx::writeDataTable(wb, sheet = "X", input_data)
+      # openxlsx::saveWorkbook(wb, xls_path, overwrite = TRUE)
+    #
+    # version for .xls file
+        wb <- xlsx::loadWorkbook(xls_path)
+        sheets <- xlsx::getSheets(wb)
+
+        cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic=TRUE) # rowcolumns
+
+        xlsx::addDataFrame(input_data, sheet = sheets$X,
+                     startRow = 1 , startColumn = 1,
+                     col.names = TRUE, row.names = FALSE,
+                     rownamesStyle = cs1)
+        xlsx::saveWorkbook(wb, xls_path)
     }
-    #
-    #
-    #     wb <- xlsx::loadWorkbook(xls_path)
-    #     sheets <- xlsx::getSheets(wb)
-    #
-    #     cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic=TRUE) # rowcolumns
-    #
-    #     xlsx::addDataFrame(input_data, sheet = sheets$X,
-    #                  startRow = 1 , startColumn = 1,
-    #                  col.names = TRUE, row.names = FALSE,
-    #                  rownamesStyle = cs1)
-    #     xlsx::saveWorkbook(wb, xls_path)
   }
 }) # validate data (write them nto excel)
 observe({
@@ -47,6 +49,7 @@ observe({
   }
 }) # reset default distro params
 
+# import result data
 results_r <- eventReactive(input$import_results, {
   x <- readxl::read_excel(xls_path, sheet = "X")
 
@@ -65,10 +68,6 @@ n_r <- shiny::reactive({
   x <- input$nn
   return(x)
 })
-r_r <- shiny::reactive({
-  x <- input$rr
-  return(x)
-})
 
 # ----------------------------------------------------------------------------
 depth_r <- shiny::reactive({
@@ -76,16 +75,19 @@ depth_r <- shiny::reactive({
   return(x)
 })
 
+# -------------------------------------
 # variables distributions parameters
-if (file.exists(dp_user_path)) {
-  distroparam <- read.table(dp_user_path, header = TRUE)
-} else if (file.exists(dp_def_path)) {
-  distroparam <- read.table(dp_def_path, header = TRUE)
-} else {
-  distroparam <- matrix(seq(NA, 48), nrow = 8)
-  colnames(distroparam) <- c("API", "GOR", "Depth Uncertainty", "Pressure gradient",
-                             "Temperature gradient", "Pressure", "Temperature", "Water salinity")
-}
+
+  if (file.exists(dp_user_path)) {
+    distroparam <- read.table(dp_user_path, header = TRUE)
+  } else if (file.exists(dp_def_path)) {
+    distroparam <- read.table(dp_def_path, header = TRUE)
+  } else {
+    distroparam <- matrix(seq(NA, 48), nrow = 8)
+    colnames(distroparam0) <- c("API", "GOR", "Depth Uncertainty", "Pressure gradient",
+                               "Temperature gradient", "Pressure", "Temperature", "Water salinity")
+  }
+
 
 values <- reactiveValues()
 
@@ -115,40 +117,69 @@ observe({
   values$distroparam <- distroparam
 })
 
+# table with distribution parameters
 output$distro_params_table <- renderRHandsontable({
-  # distroparam_temp <- distroparam_r()
-  # distroparam <- values$distroparam_r()
-  if (!is.null(distroparam))
+  if (!is.null(distroparam)) {
     rhandsontable(distroparam, useTypes = TRUE, stretchH = "all") %>%
     hot_col("variable", readOnly = TRUE) %>%
     hot_col(col = "distro", type = "dropdown", source = c("normal", "truncated normal", "lognormal",
                                                           "truncated lognormal", "uniform", "triangular", "fixed value"))
+  }
 })
+
+# -------------------------------------
+sigma_r <- shiny::reactive({
+
+  rr <- input$rr # API vs GOR correlation
+  nvars <- ifelse(input$pt_method == 0, 6, 5)
+
+  sigma <- matrix(rep(0, nvars*nvars), nrow = nvars, ncol = nvars) # uncorrelated
+
+  if(input$corr_method == 1) {
+    return(sigma)
+  } else {
+    if(input$pt_method == 0) {
+      sigma[1,] <- c(1.00,   rr, 0.00, 0.00, 0.00, 0.00)
+      sigma[2,] <- c(  rr, 1.00, 0.00, 0.00, 0.00, 0.00)
+      sigma[3,] <- c(0.00, 0.00, 1.00, 0.00, 0.00, 0.00)
+      sigma[4,] <- c(0.00, 0.00, 0.00, 1.00, 0.00, 0.00)
+      sigma[5,] <- c(0.00, 0.00, 0.00, 0.00, 1.00, 0.00)
+      sigma[6,] <- c(0.00, 0.00, 0.00, 0.00, 0.00, 1.00)
+    } else {
+      sigma[1,] <- c(1.00,   rr, 0.00, 0.00, 0.00)
+      sigma[2,] <- c(  rr, 1.00, 0.00, 0.00, 0.00)
+      sigma[3,] <- c(0.00, 0.00, 1.00, 0.00, 0.00)
+      sigma[4,] <- c(0.00, 0.00, 0.00, 1.00, 0.00)
+      sigma[5,] <- c(0.00, 0.00, 0.00, 0.00, 1.00)
+    }
+    return(sigma)
+  }
+
+})
+
+
+# table with sigma matrix
+output$sigma_table <- shiny::renderTable({
+  x <- sigma_r()
+  xx <- as.data.frame(x)
+
+  if(input$pt_method == 0) {
+    colnames(xx) <- c("API", "GOR", "Depth", "Grad P", "Grad T", "Water Salinity")
+    rownames(xx) <- c("API", "GOR", "Depth", "Grad P", "Grad T", "Water Salinity")
+  } else {
+    colnames(xx) <- c("API", "GOR", "Pressure", "Temperature", "Water Salinity")
+    rownames(xx) <- c("API", "GOR", "Pressure", "Temperature", "Water Salinity")
+  }
+  return(xx)
+}, colnames = TRUE)
 
 # ----------------------------------------------------------------------------
 # Latin Hypercube Sampling
 LHS_r <- shiny::reactive({
   n <- n_r()
-  rr <- r_r() # API vs GOR correlation
   nvars <- ifelse(input$pt_method == 0, 6, 5)
 
-  sigma <- matrix(rep(0, nvars*nvars), nrow = nvars, ncol = nvars) # uncorrelated
-
-  if(input$pt_method == 0) {
-    sigma[1,] <- c(1.00,   rr, 0.00, 0.00, 0.00, 0.00)
-    sigma[2,] <- c(  rr, 1.00, 0.00, 0.00, 0.00, 0.00)
-    sigma[3,] <- c(0.00, 0.00, 1.00, 0.00, 0.00, 0.00)
-    sigma[4,] <- c(0.00, 0.00, 0.00, 1.00, 0.00, 0.00)
-    sigma[5,] <- c(0.00, 0.00, 0.00, 0.00, 1.00, 0.00)
-    sigma[6,] <- c(0.00, 0.00, 0.00, 0.00, 0.00, 1.00)
-  } else {
-    sigma[1,] <- c(1.00,   rr, 0.00, 0.00, 0.00)
-    sigma[2,] <- c(  rr, 1.00, 0.00, 0.00, 0.00)
-    sigma[3,] <- c(0.00, 0.00, 1.00, 0.00, 0.00)
-    sigma[4,] <- c(0.00, 0.00, 0.00, 1.00, 0.00)
-    sigma[5,] <- c(0.00, 0.00, 0.00, 0.00, 1.00)
-  }
-
+  sigma <- sigma_r()
 
   corrLHS <- pse::LHS(factors = nvars, N = n, method = "HL", opts = list(COR = sigma, eps = input$lhs_accuracy))
   XX <- pse::get.data(corrLHS)
@@ -489,6 +520,8 @@ output$data_input <- DT::renderDataTable({
 })
 output$stats_output <- shiny::renderTable({
   temp <- results_r()
+
+  # exclude columns 1 and 2 that are text: CASE and CORR
   x <- do.call(cbind, lapply(temp[3:ncol(temp)], petroreadr::summary_mod))
 
   xx <- as.data.frame(x) %>%
@@ -593,21 +626,31 @@ output$plot_oilcol <- shiny::renderPlot({
     ggplot2::geom_segment(ggplot2::aes(x = mean(PRES), xend = mean(PSAT), y = 0, yend = mean(OILCOL)), color = "darkgreen", linetype = 2) +
     ggplot2::geom_segment(ggplot2::aes(x = mean(PSAT), xend = mean(PSAT), y = 0, yend = mean(OILCOL)), color = "orange", linetype = 2) +
     ggplot2::theme_bw() +
-    ggplot2::theme(plot.margin = ggplot2::margin(c(5.5, 5.5, 5.5, 10), "points")) +
+    ggplot2::theme(plot.margin = ggplot2::margin(c(5.5, 5.5, 5.5, 14), "points")) +
     ggplot2::xlim(press_lim) +
     ggplot2::ylim(oilcol_lim) +
     ggplot2::xlab("Pressure [psia]") +
     ggplot2::ylab("Depth [ft]")
 
-  plot_dd <- ggplot2::ggplot(data) +
-    ggplot2::geom_histogram(ggplot2::aes(x = DD), color = "grey27", fill = "red", alpha = 0.5) +
+  plot_dd <- ggplot2::ggplot(data, ggplot2::aes(x = DD)) +
+    ggplot2::geom_histogram(ggplot2::aes(x = DD, ..ncount..), color = "grey27", fill = "red", alpha = 0.5) +
+    ggplot2::stat_ecdf(color = "black") +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
+    ggplot2::geom_vline(ggplot2::aes(xintercept = mean (DD)), color = "red", linetype = 2) +
     ggplot2::scale_x_reverse(limits = dd_lim) +
     ggplot2::theme_bw() +
     ggplot2::theme(plot.margin = ggplot2::margin(c(5.5, 5.5, 5.5, 20), "points")) +
     ggplot2::xlab("Drawdown to Psat [psia]")
 
-  plot_psat <- ggplot2::ggplot(data) +
-    ggplot2::geom_histogram(ggplot2::aes(x = PSAT), color = "grey27", fill = "orange", alpha = 0.5) +
+  plot_psat <- ggplot2::ggplot(data, ggplot2::aes(x = PSAT)) +
+    ggplot2::geom_histogram(ggplot2::aes(x = PSAT, ..ncount..), color = "grey27", fill = "orange", alpha = 0.5) +
+    ggplot2::stat_ecdf(color = "black") +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
+    ggplot2::geom_vline(ggplot2::aes(xintercept = mean (PSAT)), color = "red", linetype = 2) +
     ggplot2::xlim(press_lim) +
     ggplot2::theme_bw() +
     ggplot2::theme(plot.margin = ggplot2::margin(c(5.5, 5.5, 5.5, 20), "points")) +
@@ -628,11 +671,11 @@ output$plot_oilcol <- shiny::renderPlot({
 
   plot_void <- ggplot2::ggplot() + ggplot2::geom_blank() + ggplot2::theme_void()
 
-  lay <- rbind(c(1,1,1,1,2,2),
-               c(3,3,3,3,4,4),
-               c(3,3,3,3,4,4),
-               c(3,3,3,3,4,4),
-               c(5,5,5,5,6,6))
+  lay <- rbind(c(1,1,1,1,1,2,2),
+               c(3,3,3,3,3,4,4),
+               c(3,3,3,3,3,4,4),
+               c(3,3,3,3,3,4,4),
+               c(5,5,5,5,5,6,6))
 
   gridExtra::grid.arrange(plot_psat, plot_void,
                           xy, plot_oilcol,
@@ -643,7 +686,7 @@ output$plot_oilcol <- shiny::renderPlot({
 # ----------------------------------------------------------------------------
 output$selectize_corr_var <- renderUI({
   data <- DATA_r()
-  selectizeInput('corr_var', 'Choose variables to plotted:',
+  selectizeInput('corr_var', 'Choose variables to be plotted:',
                  choices = colnames(data[3:ncol(data)]),
                  multiple = TRUE,
                  selected = c("API", "GOR"))

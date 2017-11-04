@@ -81,9 +81,14 @@ shiny::shinyUI(
               ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_satfam",
+              shiny::br(),
+              shiny::h4("Saturation Families:"),
+              shiny::br(),
               shiny::plotOutput("analog_apigor", width = 800, height = 600),
-              br(),
-              p("select with lazo saturation families and use classification as mappable variable")
+              shiny::br(),
+              shiny::p("Show parameters of the families lines (slope and intercept), allowing to adjust them."),
+              shiny::p("Estimate error with respect to the families lines. build an optimizer??"),
+              shiny::p("select with lazo saturation families and use classification as mappable variable")
       ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_cluster",
@@ -141,15 +146,15 @@ shiny::shinyUI(
                 )
               ),
       #-------------------------------------------------------------------------------
-      tabItem(tabName = "_heatmap", shiny::p("Heat Map"),
-              fluidRow(
-                column(width = 4,
-                       "4"
-                ),
-                column(width = 3, offset = 2,
-                       "3 offset 2"
-                )
-              )
+      tabItem(tabName = "_heatmap",
+              shiny::h4("Map"),
+              shiny::br(),
+              shiny::uiOutput("map_variable"),
+              leaflet::leafletOutput("map", height = 800),
+              shiny::radioButtons("mapstyle", "", c("Default" = "Stamen.Toner",
+                                             "OpenStreetMap" = "OpenStreetMap.Mapnik",
+                                             "Topographic" = "Esri.WorldTopoMap"),
+                           selected= "Stamen.Toner")
               ),
 
       #-------------------------------------------------------------------------------
@@ -161,7 +166,7 @@ shiny::shinyUI(
                 shiny::numericInput('nn', 'Number of runs:', 100, step = 1),
                 shiny::numericInput('ss', 'Set seed:', 1234, step = 1),
                 shiny::radioButtons("corr_method", "Correlated  Variables:", c("Correlated" = 0,
-                                                                               "Uncorrelated)" = 1), selected = 0),
+                                                                               "Uncorrelated" = 1), selected = 0),
                 shiny::radioButtons("sampling_method", "Sampling Method", c("Latin Hypercube" = 0,
                                                                             "Random" = 1), selected = 0),
                 shiny::uiOutput("lhs_acc_slider")
@@ -213,6 +218,24 @@ shiny::shinyUI(
                 tabPanel("Correlation",
                          shiny::br(),
                          shiny::numericInput('rr', 'API vs. GOR correlation coefficient:', 0.75, step = 0.05),
+                         # shiny::sliderInput("corr_API_GOR", "API vs GOR correlation:", min = -1, max = 1, value = 0.75, step = 0.05),
+                         # shiny::sliderInput("corr_API_DEPTH", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_API_gradP", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_API_gradT", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_API_ppm", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_GOR_DEPTH", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_GOR_gradP", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_GOR_gradT", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_GOR_ppm", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_DEPTH_gradP", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_DEPTH_gradT", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_DEPTH_ppm", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_gradP_gradT", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_gradP_ppm", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         # shiny::sliderInput("corr_gradT_ppm", "API vs GOR correlation:", min = -1, max = 1, value = 0.0, step = 0.05),
+                         shiny::br(),
+                         shiny::h4("Sigma Matrix (correlation between variables):"),
+                         shiny::tableOutput("sigma_table"),
                          shiny::br(),
                          shiny::uiOutput("selectize_corr_var"),
                          shiny::br(),
