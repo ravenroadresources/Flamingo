@@ -210,7 +210,10 @@ shiny::shinyUI(
                          # tableOutput("debug01"),
                          # br(),
                          shiny::br(),
-                         shiny::selectInput("fcorr_1", "Fluid Correlation:",
+                         shiny::selectInput("corr_oil_1", "Density / Bo /Psat Correlation:",
+                                            c("Glaso" = 0, "Standing" = 1, "Lasater" = 2, "VazquezBeggs" = 3,
+                                              "Petroskyetal" = 4, "AlMarhoun" = 5, "DeGhettoetalHeavyoil" = 6)),
+                         shiny::selectInput("corr_oil_2", "Viscosity Correlation:",
                                             c("Glaso" = 0, "Standing" = 1, "Lasater" = 2, "VazquezBeggs" = 3,
                                               "Petroskyetal" = 4, "AlMarhoun" = 5, "DeGhettoetalHeavyoil" = 6)),
                          shiny::tableOutput("stats_input")
@@ -302,8 +305,8 @@ shiny::shinyUI(
             tabPanel("Column",
                      shiny::br(),
                      shiny::plotOutput("plot_oilcol", height = 800) ),
-            tabPanel("Properties vs Pressure"),
-            tabPanel("Fluid Correlations"))
+            tabPanel("Properties vs Pressure", id = "MULTIPOINT", value = "MULTIPOINT"),
+            tabPanel("Fluid Correlations", id = "CORRSENS", value = "CORRSENS"))
           ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_report",

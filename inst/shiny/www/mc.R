@@ -8,19 +8,25 @@ observe({
       # class(input_data$CORR) <- "Number"
       # # wb <- openxlsx::write.xlsx(input_data, file = xls_path, sheetName = "X")
       # wb <- openxlsx::loadWorkbook(xls_path)
-      # openxlsx::writeDataTable(wb, sheet = "X", input_data)
+      # openxlsx::writeDataTable(wb, sheet = "OIL", input_data)
       # openxlsx::saveWorkbook(wb, xls_path, overwrite = TRUE)
     #
     # version for .xls file
         wb <- xlsx::loadWorkbook(xls_path)
         sheets <- xlsx::getSheets(wb)
 
-        cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic=TRUE) # rowcolumns
+        cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic = TRUE) # rowcolumns
 
-        xlsx::addDataFrame(input_data, sheet = sheets$X,
-                     startRow = 1 , startColumn = 1,
-                     col.names = TRUE, row.names = FALSE,
-                     rownamesStyle = cs1)
+        ifelse(input$fluid_type == 0,
+          xlsx::addDataFrame(input_data, sheet = sheets$OIL,
+                       startRow = 1 , startColumn = 1,
+                       col.names = TRUE, row.names = FALSE,
+                       rownamesStyle = cs1),
+          xlsx::addDataFrame(input_data, sheet = sheets$GAS,
+                             startRow = 1 , startColumn = 1,
+                             col.names = TRUE, row.names = FALSE,
+                             rownamesStyle = cs1))
+
         xlsx::saveWorkbook(wb, xls_path)
     }
   }
@@ -35,7 +41,17 @@ observe({
   if (input$pt_method == 0) aa <- TRUE
   else aa <- FALSE
   shinyjs::toggle(condition = aa, selector = "#navbar li a[data-value=PTDEPTH]")
-}) # hide tab
+}) # hide tab Pressure and Temp vs Depth
+observe({
+  if (input$fluid_corr_method == 1) aa <- TRUE
+  else aa <- FALSE
+  shinyjs::toggle(condition = aa, selector = "#navbar li a[data-value=CORRSENS]")
+}) # hide tab Pressure and Temp vs Depth
+observe({
+  if (input$points_method == 1) aa <- TRUE
+  else aa <- FALSE
+  shinyjs::toggle(condition = aa, selector = "#navbar li a[data-value=MULTIPOINT]")
+}) # hide tab Pressure and Temp vs Depth
 observe({
   if (input$dp_set_def > 0) {
     file.create(dp_user_path)
@@ -51,7 +67,10 @@ observe({
 
 # import result data
 results_r <- eventReactive(input$import_results, {
-  x <- readxl::read_excel(xls_path, sheet = "X")
+
+  ifelse(input$fluid_type == 0,
+    x <- readxl::read_excel(xls_path, sheet = "OIL"),
+    x <- readxl::read_excel(xls_path, sheet = "GAS"))
 
   xx <- x %>%
     dplyr::mutate(OILCOL = (PRES - PSAT) / DENO,
@@ -60,6 +79,7 @@ results_r <- eventReactive(input$import_results, {
   return(xx)
 }) # import results
 
+# ----------------------------------------------------------------------------
 seed_r <- shiny::reactive({
   x <- input$ss
   return(x)
@@ -69,7 +89,6 @@ n_r <- shiny::reactive({
   return(x)
 })
 
-# ----------------------------------------------------------------------------
 depth_r <- shiny::reactive({
   x <- input$depth
   return(x)
@@ -340,11 +359,12 @@ DATA_r <- shiny::reactive({
   for (i in 1:n) {
     CASE[i] <- ifelse(i < 10, paste0("CASE_00", i), ifelse(i < 100, paste0("CASE_0", i), paste0("CASE_", i)))
   }
-  CORR <- rep(as.numeric(input$fcorr_1), n)
-
+  CORR <- rep(as.numeric(input$corr_oil_1), n)
+  UCORR <- rep(as.numeric(input$corr_oil_2), n)
 
   x <- dplyr::data_frame(CASE = CASE) %>%
     dplyr::mutate(CORR = CORR,
+                  UCORR = UCORR,
                   API = API_r(),
                   GOR = GOR_r(),
                   DEPTH = depth_r() + DEPT_err_r(),
@@ -352,7 +372,7 @@ DATA_r <- shiny::reactive({
                   TEMP = TEMP_r(),
                   GRAD_P = grad_P,
                   GRAD_T = grad_T,
-                  WATER = water_r())
+                  PPM = water_r())
 
   if(input$pt_method == 0) {
     if(input$offshore == TRUE) {
@@ -366,9 +386,10 @@ DATA_r <- shiny::reactive({
 
 
   # add MEAN case
-  xm <- dplyr::data_frame(CASE = "CASE_MEAN", CORR = as.numeric(input$fcorr_1), API = mean(x$API), GOR = mean(x$GOR),
+  xm <- dplyr::data_frame(CASE = "CASE_MEAN", CORR = as.numeric(input$corr_oil_1), UCORR = as.numeric(input$corr_oil_1),
+                          API = mean(x$API), GOR = mean(x$GOR),
                           DEPTH = mean(x$DEPTH), PRESS = mean(x$PRESS), TEMP = mean(x$TEMP),
-                          GRAD_P = mean(x$GRAD_P), GRAD_T = mean(x$GRAD_T), WATER = mean(x$WATER))
+                          GRAD_P = mean(x$GRAD_P), GRAD_T = mean(x$GRAD_T), PPM = mean(x$PPM))
 
   colnames(xm) <- colnames(x)
   x <- rbind(x, xm)
@@ -438,12 +459,12 @@ output$stats_input <- shiny::renderTable({
   if (input$pt_method == 0) {
     xx <- as.data.frame(x) %>%
       dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev")) %>%
-      dplyr::select(Statistic, API, GOR, DEPTH, PRESS, TEMP, GRAD_P, GRAD_T, WATER)
+      dplyr::select(Statistic, API, GOR, DEPTH, PRESS, TEMP, GRAD_P, GRAD_T, PPM)
   }
   else {
     xx <- as.data.frame(x) %>%
       dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev")) %>%
-      dplyr::select(Statistic, API, GOR, PRESS, TEMP, WATER)
+      dplyr::select(Statistic, API, GOR, PRESS, TEMP, PPM)
   }
 
 
