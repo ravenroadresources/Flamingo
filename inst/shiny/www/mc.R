@@ -43,15 +43,15 @@ observe({
   shinyjs::toggle(condition = aa, selector = "#navbar li a[data-value=PTDEPTH]")
 }) # hide tab Pressure and Temp vs Depth
 observe({
-  if (input$fluid_corr_method == 1) aa <- TRUE
+  if (input$analysis_method == 2) aa <- TRUE
   else aa <- FALSE
   shinyjs::toggle(condition = aa, selector = "#navbar li a[data-value=CORRSENS]")
-}) # hide tab Pressure and Temp vs Depth
+}) # hide tab Correlation Sensitivity
 observe({
-  if (input$points_method == 1) aa <- TRUE
+  if (input$analysis_method == 1) aa <- TRUE
   else aa <- FALSE
   shinyjs::toggle(condition = aa, selector = "#navbar li a[data-value=MULTIPOINT]")
-}) # hide tab Pressure and Temp vs Depth
+}) # hide tab properties vs Pressure
 observe({
   if (input$dp_set_def > 0) {
     file.create(dp_user_path)
@@ -359,8 +359,8 @@ DATA_r <- shiny::reactive({
   for (i in 1:n) {
     CASE[i] <- ifelse(i < 10, paste0("CASE_00", i), ifelse(i < 100, paste0("CASE_0", i), paste0("CASE_", i)))
   }
-  CORR <- rep(as.numeric(input$corr_oil_1), n)
-  UCORR <- rep(as.numeric(input$corr_oil_2), n)
+  CORR <- rep(as.numeric(input$corr_oil_1[1]), n)
+  UCORR <- rep(as.numeric(input$corr_oil_2[1]), n)
 
   x <- dplyr::data_frame(CASE = CASE) %>%
     dplyr::mutate(CORR = CORR,
@@ -393,6 +393,29 @@ DATA_r <- shiny::reactive({
 
   colnames(xm) <- colnames(x)
   x <- rbind(x, xm)
+
+  if (input$analysis_method == 1) {
+    temp <- NULL
+    for (i in 1:input$press_steps) {
+      temp <- rbind(x, temp)
+    }
+    x <- dplyr::arrange(temp, CASE)
+  } else if (input$analysis_method == 2) {
+    # calculate number of combinations
+    ncorr1 <- length(input$corr_oil_1)
+    ncorr2 <- length(input$corr_oil_2)
+    combinations <- ncorr1 * ncorr2
+
+    # expanda data frame
+    temp <- NULL
+    for (i in 1:combinations) {
+      temp <- rbind(x, temp)
+    }
+    x <- dplyr::arrange(temp, CASE)
+
+    # correct CORR and UCORR columns
+
+  }
 
   return(x)
 })
@@ -712,7 +735,10 @@ output$selectize_corr_var <- renderUI({
                  multiple = TRUE,
                  selected = c("API", "GOR"))
 })
-
+output$nn_runs <- renderUI({
+  ifelse(input$analysis_method < 2, aa <- 100, aa <- 25)
+  shiny::numericInput('nn', 'Number of runs:', aa, step = 1)
+})
 output$lhs_acc_slider <- renderUI({
   if (input$sampling_method == 0) {
     shiny::sliderInput("lhs_accuracy", "LHS Accuracy level:", min = 0.01, max = 1, value = 0.05, step = 0.01)
@@ -744,6 +770,41 @@ output$button_check_1 <- renderText({
   x <- NULL
   if (input$open_prosper > 0) x <- "Data validated!"
   return(x)
+})
+output$pressure_min <- renderUI({
+  if (input$analysis_method == 1) shiny::numericInput('press_min', "Minimum Pressure [psig]", 1000, step = 10, min = 0)
+})
+output$pressure_max <- renderUI({
+  if (input$analysis_method == 1) shiny::numericInput('press_max', "Maximum Pressure [psig]", 5000, step = 10, min = 0)
+})
+output$pressure_steps <- renderUI({
+  if (input$analysis_method == 1) shiny::numericInput('press_steps', "Steps", 1, step = 1, min = 1)
+})
+
+output$selectize_corr_oil_1 <- renderUI({
+  if (input$analysis_method < 2) {
+    shiny::selectInput("corr_oil_1", "Density / Bo /Psat Correlation:",
+                       c("Glaso" = 0, "Standing" = 1, "Lasater" = 2, "VazquezBeggs" = 3,
+                         "Petroskyetal" = 4, "AlMarhoun" = 5, "DeGhettoetalHeavyoil" = 6))
+  } else {
+    shiny::selectizeInput('corr_oil_1', 'Choose Psat / Rs / Bo Correlations:',
+                   choices = c("Glaso", "Standing", "Lasater", "VazquezBeggs",
+                               "Petroskyetal", "AlMarhoun", "DeGhettoetalHeavyoil"),
+                   multiple = TRUE,
+                   selected = c("Glaso"))
+  }
+})
+output$selectize_corr_oil_2 <- renderUI({
+  if (input$analysis_method < 2) {
+    shiny::selectInput("corr_oil_2", "Viscosity Correlation:",
+                       c("Glaso" = 0, "Standing" = 1, "Lasater" = 2, "VazquezBeggs" = 3,
+                         "Petroskyetal" = 4, "AlMarhoun" = 5, "DeGhettoetalHeavyoil" = 6))
+  } else {
+    shiny::selectizeInput('corr_oil_2', 'Choose Viscosity Correlations:',
+                   choices = c("Glaso", "Standing", "Petrosky", "VazquezBeggs"),
+                   multiple = TRUE,
+                   selected = c("Glaso"))
+  }
 })
 
 

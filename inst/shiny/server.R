@@ -3,29 +3,25 @@ require(dplyr)
 # require(xlsx)
 # require(rJava)
 
+
+package_path <- system.file(package = "Flamingo")
+dp_user_path <- file.path(package_path, "shiny", "www", "default", "distro_params_user.txt")
+dp_def_path <- file.path(package_path, "shiny", "www", "default", "distro_params_default.txt")
+# dp_def1_path <- file.path(package_path, "shiny", "www", "default", "distro_params_default_1.txt")
+vbs_path <- file.path(package_path, "extdata", "Flamingo.vbs")
+prosper_path <- file.path(package_path, "extdata", "Flamingo.Out")
+xls_path <- file.path(package_path, "extdata", "Flamingo.xls")
+rmd_path <- file.path(package_path, "shiny", "www", "rmd", "report.Rmd")
+report_path <- file.path(package_path, "shiny", "www", "rmd", "report.html")
+analog_default_path <- file.path(package_path, "extdata", "Analogs_example.xlsx")
+
+rsource_mc_path <- file.path(package_path, "shiny", "www", "mc.R")
+rsource_analog_path <- file.path(package_path, "shiny", "www", "analog.R")
+rsource_report_path <- file.path(package_path, "shiny", "www", "report.R")
+
+
 # SERVER
-
 shiny::shinyServer(function(input, output) {
-
-  package_path <- system.file(package = "Flamingo")
-  dp_user_path <- file.path(package_path, "shiny", "www", "default", "distro_params_user.txt")
-  dp_def_path <- file.path(package_path, "shiny", "www", "default", "distro_params_default.txt")
-  # dp_def1_path <- file.path(package_path, "shiny", "www", "default", "distro_params_default_1.txt")
-  vbs_path <- file.path(package_path, "extdata", "Flamingo.vbs")
-  prosper_path <- file.path(package_path, "extdata", "Flamingo.Out")
-  xls_path <- file.path(package_path, "extdata", "Flamingo.xls")
-  rmd_path <- file.path(package_path, "shiny", "www", "rmd", "report.Rmd")
-  report_path <- file.path(package_path, "shiny", "www", "rmd", "report.html")
-  analog_default_path <- file.path(package_path, "extdata", "Analogs_example.xlsx")
-
-  rsource_mc_path <- file.path(package_path, "shiny", "www", "mc.R")
-  rsource_analog_path <- file.path(package_path, "shiny", "www", "analog.R")
-  rsource_report_path <- file.path(package_path, "shiny", "www", "report.R")
-
-  # output$report_path <- shiny::renderText({
-  #   x <- report_path
-  #   return(x)
-  # })
 
   observe({
     if (input$close > 0) shiny::stopApp()  # stop shiny
@@ -37,8 +33,6 @@ shiny::shinyServer(function(input, output) {
   source(rsource_analog_path, local = TRUE)
   # REPORT
   source(rsource_report_path, local = TRUE)
-
-
 
 })
 

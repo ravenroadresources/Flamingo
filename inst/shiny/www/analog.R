@@ -114,6 +114,7 @@ centroids_r <- reactive({
 ### OUTPUT:
 
 # UI
+
 output$cutoff_slider <- shiny::renderUI({
   h <- h_r()
   if (input$cutoff_method==0) {
@@ -150,6 +151,7 @@ output$map_variable <- shiny::renderUI({
   # shiny::selectInput("map_var", "Select Variable to plot on the map:", c(colnames(data), "cluster"))
   selectizeInput('map_var', 'Select Variable to plot on the map:', choices = c(colnames(data), "cluster"), multiple = FALSE)
 })
+
 
 # DataTable
 output$resultstable <- renderDataTable({
