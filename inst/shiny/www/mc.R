@@ -386,7 +386,7 @@ DATA_r <- shiny::reactive({
 
 
   # add MEAN case
-  xm <- dplyr::data_frame(CASE = "CASE_MEAN", CORR = as.numeric(input$corr_oil_1), UCORR = as.numeric(input$corr_oil_1),
+  xm <- dplyr::data_frame(CASE = "CASE_MEAN", CORR = as.numeric(input$corr_oil_1[1]), UCORR = as.numeric(input$corr_oil_2[1]),
                           API = mean(x$API), GOR = mean(x$GOR),
                           DEPTH = mean(x$DEPTH), PRESS = mean(x$PRESS), TEMP = mean(x$TEMP),
                           GRAD_P = mean(x$GRAD_P), GRAD_T = mean(x$GRAD_T), PPM = mean(x$PPM))
@@ -414,6 +414,8 @@ DATA_r <- shiny::reactive({
     x <- dplyr::arrange(temp, CASE)
 
     # correct CORR and UCORR columns
+    # ...
+    # ...
 
   }
 
@@ -477,7 +479,7 @@ output$hist_presstemp <- shiny::renderPlot({
 })
 output$stats_input <- shiny::renderTable({
   temp <- DATA_r()
-  x <- do.call(cbind, lapply(temp[3:ncol(temp)], petroreadr::summary_mod))
+  x <- do.call(cbind, lapply(temp[4:ncol(temp)], petroreadr::summary_mod))
 
   if (input$pt_method == 0) {
     xx <- as.data.frame(x) %>%
@@ -656,9 +658,32 @@ output$hist_dens <- shiny::renderPlot({
   gridExtra::grid.arrange(plot_deno, plot_denw, ncol = 2)
 })
 
-output$plot_oilcol <- shiny::renderPlot({
+output$plot_sensitivity <- shiny::renderPlot({
   data <- results_r() %>%
-    dplyr::mutate(DD = PRES - PSAT)
+    dplyr::select_if(is.numeric) %>%
+    dplyr::select(-CORR, -UCORR)
+
+  correlation <- as.data.frame(cor(data))
+
+  var_corr <- correlation[ , input$sens_ref]
+  var_names <- rownames(correlation)
+  oo <- order(var_corr, decreasing = FALSE, na.last = FALSE)
+  COVBAR <- data.frame(VAR = factor(var_names[oo], levels = var_names[oo]), COV = var_corr[oo]) %>%
+    dplyr::mutate(Correlation = ifelse(COV > 0, "Positive", "Negative"))
+
+  ggplot2::ggplot(COVBAR, ggplot2::aes(x = VAR, y = COV, label = round(COV, 2))) +
+    ggplot2::geom_bar(ggplot2::aes(fill = Correlation), stat = "identity", color = "grey27", alpha = 0.4) +
+    ggplot2::theme_bw() +
+    ggplot2::coord_flip() +
+    # ggplot2::scale_fill_continuous(low = "blue", high = "red") +
+    ggplot2::scale_fill_manual(values = c("blue", "red")) +
+    ggplot2::geom_text(ggplot2::aes(y = 0), color = "darkred") +
+    ggplot2::xlab("") +
+    ggplot2::ylab("R2")
+
+})
+output$plot_oilcol <- shiny::renderPlot({
+  data <- results_r()
 
   oilcol_lim <- c(min(data$depth_err), max(data$OILCOL))
   press_lim <- c(0, max(data$PRES))
@@ -726,6 +751,27 @@ output$plot_oilcol <- shiny::renderPlot({
                           plot_dd, plot_void,
                           ncol = 2, layout_matrix = lay)
 })
+output$plot_pptyvspres <- shiny::renderPlot({
+  data <- results_r() %>%
+    dplyr::select(-CORR, -UCORR)
+
+  ggplot2::ggplot(data) +
+    ggplot2::geom_point(ggplot2::aes(x = Pressure, y = data[ , input$pvsp_ppty]), size = 1.5, stroke = 0.5) +
+    ggplot2::geom_line(ggplot2::aes(x = Pressure, y = data[ , input$pvsp_ppty], group = CASE)) +
+    ggplot2::theme_bw() +
+    ggplot2::ylab(as.character(input$pvsp_ppty)) +
+    ggplot2::xlab("Pressure [psig]")
+
+})
+output$plot_corr_sens <- shiny::renderPlot({
+  data <- results_r() %>%
+    dplyr::mutate(Fluid_Corrrelation = paste(CORR, "/", UCORR))
+
+  ggplot2::ggplot(data) +
+    ggplot2::geom_boxplot(ggplot2::aes(x = Fluid_Corrrelation, y = data[ , input$pvsp_ppty])) +
+    ggplot2::theme_bw()
+})
+
 
 # ----------------------------------------------------------------------------
 output$selectize_corr_var <- renderUI({
@@ -768,7 +814,7 @@ output$depth_temp <- renderUI({
 })
 output$button_check_1 <- renderText({
   x <- NULL
-  if (input$open_prosper > 0) x <- "Data validated!"
+  if (input$validate > 0) x <- "Data validated!"
   return(x)
 })
 output$pressure_min <- renderUI({
@@ -806,7 +852,29 @@ output$selectize_corr_oil_2 <- renderUI({
                    selected = c("Glaso"))
   }
 })
+output$sensitivity_ref <- renderUI({
+  data <- results_r() %>%
+    dplyr::select_if(is.numeric) %>%
+    dplyr::select(-CORR, -UCORR)
 
+  shiny::selectInput("sens_ref", "Reference Variable:",
+                     colnames(data))
+})
+output$pvsp_reference <- renderUI({
+  data <- results_r() %>%
+    dplyr::select_if(is.numeric)
+
+  shiny::selectInput("pvsp_ppty", "Reference Variable:",
+                     colnames(data))
+})
+output$fluid_corr_sens_ref <- renderUI({
+  data <- results_r() %>%
+    dplyr::select_if(is.numeric) %>%
+    dplyr::select(-CORR, -UCORR)
+
+  shiny::selectInput("fcorr_sens_ref", "Reference Variable:",
+                     colnames(data))
+})
 
 output$debug01 <- renderTable({
   # x <- values$distroparam[1,3]

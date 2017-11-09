@@ -147,15 +147,22 @@ shiny::shinyUI(
               ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_heatmap",
-              shiny::h4("Map"),
-              shiny::br(),
-              shiny::uiOutput("map_variable"),
-              leaflet::leafletOutput("map", height = 800),
-              shiny::radioButtons("mapstyle", "", c("Default" = "Stamen.Toner",
-                                             "OpenStreetMap" = "OpenStreetMap.Mapnik",
-                                             "Topographic" = "Esri.WorldTopoMap"),
-                           selected= "Stamen.Toner")
-              ),
+              tabsetPanel(
+                tabPanel("Coordinates",
+                         p("define variables to be used as coordinates and reference system.")
+                         ),
+                tabPanel("Map",
+                         shiny::h4("Map"),
+                         shiny::br(),
+                         shiny::uiOutput("map_variable"),
+                         leaflet::leafletOutput("map", height = 800),
+                         shiny::radioButtons("mapstyle", "", c("Default" = "Stamen.Toner",
+                                                               "OpenStreetMap" = "OpenStreetMap.Mapnik",
+                                                               "Topographic" = "Esri.WorldTopoMap"),
+                                             selected= "Stamen.Toner")
+                )
+              )
+            ),
 
       #-------------------------------------------------------------------------------
       #-------------------------------------------------------------------------------
@@ -229,7 +236,7 @@ shiny::shinyUI(
                          shiny::uiOutput("selectize_corr_oil_2"),
                          shiny::tableOutput("stats_input")
                 ),
-                tabPanel("Correlation",
+                tabPanel("Sigma",
                          shiny::br(),
                          shiny::numericInput('rr', 'API vs. GOR correlation coefficient:', 0.75, step = 0.05),
                          # shiny::sliderInput("corr_API_GOR", "API vs GOR correlation:", min = -1, max = 1, value = 0.75, step = 0.05),
@@ -313,11 +320,27 @@ shiny::shinyUI(
                      shiny::plotOutput("hist_bovisco"),
                      shiny::plotOutput("hist_psatcol"),
                      shiny::plotOutput("hist_dens") ),
+            tabPanel("Sensitivity",
+                     shiny::br(),
+                     shiny::uiOutput("sensitivity_ref"),
+                     shiny::br(),
+                     shiny::plotOutput("plot_sensitivity", height = 800, width = 600) ),
             tabPanel("Column",
                      shiny::br(),
                      shiny::plotOutput("plot_oilcol", height = 800) ),
-            tabPanel("Properties vs Pressure", id = "MULTIPOINT", value = "MULTIPOINT"),
-            tabPanel("Fluid Correlations", id = "CORRSENS", value = "CORRSENS"))
+            tabPanel("Properties vs Pressure", id = "MULTIPOINT", value = "MULTIPOINT",
+                     shiny::br(),
+                     shiny::uiOutput("pvsp_reference"),
+                     shiny::br(),
+                     shiny::plotOutput("plot_pptyvspres", height = 800)
+                     ),
+            tabPanel("Fluid Correlations", id = "CORRSENS", value = "CORRSENS",
+                    shiny::br(),
+                    shiny::uiOutput("fluid_corr_sens_ref"),
+                    shiny::br(),
+                    shiny::plotOutput("plot_corr_sens", height = 600)
+                    )
+            )
           ),
       #-------------------------------------------------------------------------------
       tabItem(tabName = "_report",
