@@ -5,29 +5,38 @@ observe({
     if (length(input_data) > 0) {
 
       # version for .xlsX file
-      # class(input_data$CORR) <- "Number"
-      # # wb <- openxlsx::write.xlsx(input_data, file = xls_path, sheetName = "X")
-      # wb <- openxlsx::loadWorkbook(xls_path)
-      # openxlsx::writeDataTable(wb, sheet = "OIL", input_data)
-      # openxlsx::saveWorkbook(wb, xls_path, overwrite = TRUE)
+      class(input_data$CORR) <- "Number"
+      # wb <- openxlsx::write.xlsx(input_data, file = xls_path, sheetName = "X")
+      wb <- openxlsx::loadWorkbook(xls_path)
+      openxlsx::deleteData(wb, sheet = "OIL", cols = 1:25, rows = 2:10100, gridExpand = TRUE)
+      openxlsx::writeData(wb, sheet = "OIL", input_data)
+      openxlsx::writeData(wb, sheet = "Settings", input$analysis_method, startCol = 2, startRow = 1)
+      openxlsx::writeData(wb, sheet = "Settings", input$press_min, startCol = 2, startRow = 2)
+      openxlsx::writeData(wb, sheet = "Settings", input$press_max, startCol = 2, startRow = 3)
+      openxlsx::writeData(wb, sheet = "Settings", input$press_steps, startCol = 2, startRow = 4)
+      openxlsx::writeData(wb, sheet = "Settings", input$gas_sp, startCol = 2, startRow = 5)
+      openxlsx::saveWorkbook(wb, xls_path, overwrite = TRUE)
     #
     # version for .xls file
-        wb <- xlsx::loadWorkbook(xls_path)
-        sheets <- xlsx::getSheets(wb)
 
-        cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic = TRUE) # rowcolumns
 
-        ifelse(input$fluid_type == 0,
-          xlsx::addDataFrame(input_data, sheet = sheets$OIL,
-                       startRow = 1 , startColumn = 1,
-                       col.names = TRUE, row.names = FALSE,
-                       rownamesStyle = cs1),
-          xlsx::addDataFrame(input_data, sheet = sheets$GAS,
-                             startRow = 1 , startColumn = 1,
-                             col.names = TRUE, row.names = FALSE,
-                             rownamesStyle = cs1))
+        #wb <- xlsx::loadWorkbook(xls_path)
+       # wb <- xlsx::loadWorkbook("C:/Users/FGIORGETTI/Documents/R/win-library/3.4/Flamingo/extdata")
+       # sheets <- xlsx::getSheets(wb)
 
-        xlsx::saveWorkbook(wb, xls_path)
+       # cs1 <- xlsx::CellStyle(wb) + xlsx::Font(wb, isItalic = TRUE) # rowcolumns
+
+       # ifelse(input$fluid_type == 0,
+       #   xlsx::addDataFrame(input_data, sheet = sheets$OIL,
+       #                startRow = 1 , startColumn = 1,
+       #                col.names = TRUE, row.names = FALSE,
+       #                rownamesStyle = cs1),
+       #   xlsx::addDataFrame(input_data, sheet = sheets$GAS,
+       #                      startRow = 1 , startColumn = 1,
+       #                      col.names = TRUE, row.names = FALSE,
+       #                      rownamesStyle = cs1))
+
+       # xlsx::saveWorkbook(wb, "C:/Users/FGIORGETTI/Documents/R/win-library/3.4/Flamingo/extdata")
     }
   }
 }) # validate data (write them nto excel)
@@ -314,7 +323,7 @@ water_r <- shiny::reactive({
 
   return(X)
 }) # Water Salinity [ppm]
-PRESS_r <- shiny::reactive({
+PRES_r <- shiny::reactive({
   n <- n_r()
   seed <- seed_r()
 
@@ -368,7 +377,8 @@ DATA_r <- shiny::reactive({
                   API = API_r(),
                   GOR = GOR_r(),
                   DEPTH = depth_r() + DEPT_err_r(),
-                  PRESS = PRESS_r(),
+                  depth_err = DEPT_err_r(),
+                  PRES = PRES_r(),
                   TEMP = TEMP_r(),
                   GRAD_P = grad_P,
                   GRAD_T = grad_T,
@@ -376,10 +386,10 @@ DATA_r <- shiny::reactive({
 
   if(input$pt_method == 0) {
     if(input$offshore == TRUE) {
-      x$PRESS <- 14.7 + input$wd * 0.433 + (x$DEPTH - input$wd) * grad_P
+      x$PRES <- 14.7 + input$wd * 0.433 + (x$DEPTH - input$wd) * grad_P
       x$TEMP <- input$temp_bottomsea + (x$DEPTH - input$wd) / 100 * grad_T
     } else {
-      x$PRESS <- 14.7 + (x$DEPTH + input$gle) * grad_P
+      x$PRES <- 14.7 + (x$DEPTH + input$gle) * grad_P
       x$TEMP <- input$temp_surface + (x$DEPTH + input$gle) / 100 * grad_T
     }
   }
@@ -387,8 +397,8 @@ DATA_r <- shiny::reactive({
 
   # add MEAN case
   xm <- dplyr::data_frame(CASE = "CASE_MEAN", CORR = as.numeric(input$corr_oil_1[1]), UCORR = as.numeric(input$corr_oil_2[1]),
-                          API = mean(x$API), GOR = mean(x$GOR),
-                          DEPTH = mean(x$DEPTH), PRESS = mean(x$PRESS), TEMP = mean(x$TEMP),
+                          API = mean(x$API), GOR = mean(x$GOR), DEPTH = mean(x$DEPTH),
+                          depth_err = mean(x$depth_err), PRES = mean(x$PRES), TEMP = mean(x$TEMP),
                           GRAD_P = mean(x$GRAD_P), GRAD_T = mean(x$GRAD_T), PPM = mean(x$PPM))
 
   colnames(xm) <- colnames(x)
@@ -414,10 +424,21 @@ DATA_r <- shiny::reactive({
     x <- dplyr::arrange(temp, CASE)
 
     # correct CORR and UCORR columns
-    # ...
-    # ...
+    corr_combs <- expand.grid(CORR = input$corr_oil_1, UCORR = input$corr_oil_2)
 
+    x$CORR <- corr_combs$CORR
+    x$UCORR <- corr_combs$UCORR
   }
+
+  return(x)
+})
+
+output_var_r <- shiny::reactive({
+  # should be changed for gas cases
+  # optionally make the user seldct the list of output variables
+  ifelse(input$fluid_type == 0,
+    x <- c("VISCO", "PSAT", "BO", "DENO", "DENW", "FVF"),
+    x <- c("VISCO", "PSAT", "BO", "DENO", "DENW", "FVF"))
 
   return(x)
 })
@@ -453,13 +474,13 @@ output$hist_apigor <- shiny::renderPlot({
 output$hist_presstemp <- shiny::renderPlot({
   data <- DATA_r()
 
-  plot_api <- ggplot2::ggplot(data, ggplot2::aes(x = PRESS)) +
-    ggplot2::geom_histogram(ggplot2::aes(x = PRESS, ..ncount..), color = "grey79", alpha = 0.4, bins = 25) +
+  plot_api <- ggplot2::ggplot(data, ggplot2::aes(x = PRES)) +
+    ggplot2::geom_histogram(ggplot2::aes(x = PRES, ..ncount..), color = "grey79", alpha = 0.4, bins = 25) +
     ggplot2::stat_ecdf(color = "darkred") +
     ggplot2::geom_hline(ggplot2::aes(yintercept = 0.9), color = "blue", linetype = 3) +
     ggplot2::geom_hline(ggplot2::aes(yintercept = 0.5), color = "blue", linetype = 3) +
     ggplot2::geom_hline(ggplot2::aes(yintercept = 0.1), color = "blue", linetype = 3) +
-    ggplot2::geom_vline(ggplot2::aes(xintercept = mean(PRESS)), color = "green", linetype = 2) +
+    ggplot2::geom_vline(ggplot2::aes(xintercept = mean(PRES)), color = "green", linetype = 2) +
     ggplot2::theme_bw() +
     ggplot2::xlab("psia") +
     ggplot2::ggtitle("Reservoir Pressure")
@@ -484,12 +505,12 @@ output$stats_input <- shiny::renderTable({
   if (input$pt_method == 0) {
     xx <- as.data.frame(x) %>%
       dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev")) %>%
-      dplyr::select(Statistic, API, GOR, DEPTH, PRESS, TEMP, GRAD_P, GRAD_T, PPM)
+      dplyr::select(Statistic, API, GOR, DEPTH, PRES, TEMP, GRAD_P, GRAD_T, PPM)
   }
   else {
     xx <- as.data.frame(x) %>%
       dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev")) %>%
-      dplyr::select(Statistic, API, GOR, PRESS, TEMP, PPM)
+      dplyr::select(Statistic, API, GOR, PRES, TEMP, PPM)
   }
 
 
@@ -512,7 +533,7 @@ output$depth_plot <- shiny::renderPlot({
                         input$gle + (input$temp_surface / mean(data$GRAD_T) * 100))
 
   pres <- ggplot2::ggplot(data) +
-    ggplot2::geom_point(ggplot2::aes(x = PRESS, y = DEPTH), alpha = 0.7) +
+    ggplot2::geom_point(ggplot2::aes(x = PRES, y = DEPTH), alpha = 0.7) +
     ggplot2::geom_abline(ggplot2::aes(intercept = p_intercept, slope = -1 / mean(GRAD_P)), color = "darkblue") +
     ggplot2::geom_abline(ggplot2::aes(intercept = p_intercept, slope = -1 / quantile(GRAD_P, 0.9)),
                          color = "darkblue", linetype = 3) +
@@ -547,7 +568,7 @@ output$data_input <- DT::renderDataTable({
     dplyr::mutate(API = round(API, digits = 1),
                   GOR = round(GOR, digits = 0),
                   DEPTH = round(DEPTH, digits = 0),
-                  PRESS = round(PRESS, digits = 0),
+                  PRES = round(PRES, digits = 0),
                   TEMP = round(TEMP, digits = 0),
                   GRAD_P = round(GRAD_P, digits = 3),
                   GRAD_T = round(GRAD_T, digits = 2))
@@ -568,7 +589,7 @@ output$stats_output <- shiny::renderTable({
   temp <- results_r()
 
   # exclude columns 1 and 2 that are text: CASE and CORR
-  x <- do.call(cbind, lapply(temp[3:ncol(temp)], petroreadr::summary_mod))
+  x <- do.call(cbind, lapply(temp[4:ncol(temp)], petroreadr::summary_mod))
 
   xx <- as.data.frame(x) %>%
     dplyr::mutate(Statistic = c("Min", "p90", "p75", "p50", "Mean", "p25", "p10", "Max", "St.Dev"))
@@ -660,8 +681,7 @@ output$hist_dens <- shiny::renderPlot({
 
 output$plot_sensitivity <- shiny::renderPlot({
   data <- results_r() %>%
-    dplyr::select_if(is.numeric) %>%
-    dplyr::select(-CORR, -UCORR)
+    dplyr::select_if(is.numeric)
 
   correlation <- as.data.frame(cor(data))
 
@@ -679,8 +699,38 @@ output$plot_sensitivity <- shiny::renderPlot({
     ggplot2::scale_fill_manual(values = c("blue", "red")) +
     ggplot2::geom_text(ggplot2::aes(y = 0), color = "darkred") +
     ggplot2::xlab("") +
-    ggplot2::ylab("R2")
+    ggplot2::ylab("Correlation")
+})
+output$plot_saturation <- shiny::renderPlot({
+  data <- results_r() %>%
+    dplyr::mutate(Sat = dplyr::if_else(PSAT < 0.25 * PRES, "HUS",
+                                       dplyr::if_else(PSAT < 0.5 * PRES, "US",
+                                                      dplyr::if_else(PSAT < 0.75 * PRES, "MUS",
+                                                                     dplyr::if_else(PSAT <  PRES, "NSC", "FLASH")
+                                       ))),
+                  Sat = factor(Sat, levels = c("HUS", "US", "MUS", "NSC", "FLASH")))
 
+  data2 <- data %>%
+    count(Sat) %>%
+    mutate(perc = n / nrow(data))
+
+  scatter <- ggplot2::ggplot(data) +
+    ggplot2::geom_point(ggplot2::aes(x = PRES, y = PSAT, color = Sat), size = 2, alpha = 0.6) +
+    ggplot2::geom_abline(ggplot2::aes(slope = 1, intercept = 0)) +
+    ggplot2::geom_abline(ggplot2::aes(slope = 0.75, intercept = 0)) +
+    ggplot2::geom_abline(ggplot2::aes(slope = 0.5, intercept = 0)) +
+    ggplot2::geom_abline(ggplot2::aes(slope = 0.25, intercept = 0)) +
+    ggplot2::xlim(0, max(data$PRES)) +
+    ggplot2::ylim(0, max(data$PSAT)) +
+    ggplot2::theme_bw()
+
+  bar <- ggplot2::ggplot(data2, ggplot2::aes(x = Sat, y = perc)) +
+    ggplot2::geom_bar(ggplot2::aes(fill = Sat), alpha = 0.4, stat = "identity") +
+    ggplot2::theme_bw() +
+    ggplot2::scale_y_continuous(labels = scales::percent) +
+    ggplot2::ylab("relative frequencies")
+
+  gridExtra::grid.arrange(scatter, bar, ncol = 2)
 })
 output$plot_oilcol <- shiny::renderPlot({
   data <- results_r()
@@ -756,21 +806,34 @@ output$plot_pptyvspres <- shiny::renderPlot({
     dplyr::select(-CORR, -UCORR)
 
   ggplot2::ggplot(data) +
-    ggplot2::geom_point(ggplot2::aes(x = Pressure, y = data[ , input$pvsp_ppty]), size = 1.5, stroke = 0.5) +
-    ggplot2::geom_line(ggplot2::aes(x = Pressure, y = data[ , input$pvsp_ppty], group = CASE)) +
+    ggplot2::geom_point(ggplot2::aes(x = Pressure, y = data[ , input$pvsp_ppty]), size = 1.5, alpha = 0.5) +
+    ggplot2::geom_line(ggplot2::aes(x = Pressure, y = data[ , input$pvsp_ppty], group = CASE), alpha = 0.5, size = 1) +
+    ggplot2::geom_vline(ggplot2::aes(xintercept = mean(PRES)), color = "darkred", size = 1.5, linetype = 2) +
+    ggplot2::geom_vline(ggplot2::aes(xintercept = quantile(PRES, probs = 0.1)), color = "darkred", size = 1.5,linetype = 3) +
+    ggplot2::geom_vline(ggplot2::aes(xintercept = quantile(PRES, probs = 0.9)), color = "darkred", size = 1.5,linetype = 3) +
     ggplot2::theme_bw() +
     ggplot2::ylab(as.character(input$pvsp_ppty)) +
     ggplot2::xlab("Pressure [psig]")
-
 })
 output$plot_corr_sens <- shiny::renderPlot({
+  outputvariables <- output_var_r()
+
   data <- results_r() %>%
     dplyr::mutate(Fluid_Corrrelation = paste(CORR, "/", UCORR))
 
-  ggplot2::ggplot(data) +
-    ggplot2::geom_boxplot(ggplot2::aes(x = Fluid_Corrrelation, y = data[ , input$pvsp_ppty])) +
-    ggplot2::theme_bw()
+  if (input$fcorr_sens_ref == "VISCO") {
+    ggplot2::ggplot(data) +
+      ggplot2::geom_boxplot(ggplot2::aes(x = Fluid_Corrrelation, y = VISCO), fill = "grey27", alpha =  0.6) +
+      ggplot2::theme_bw()
+  } else {
+    ggplot2::ggplot(data) +
+      ggplot2::geom_boxplot(ggplot2::aes(x = CORR, y = data[ , input$fcorr_sens_ref]), fill = "blue", alpha =  0.6) +
+      ggplot2::theme_bw() +
+      ggplot2::ylab(as.character(input$fcorr_sens_ref))
+
+  }
 })
+
 
 
 # ----------------------------------------------------------------------------
@@ -812,11 +875,11 @@ output$depth_temp <- renderUI({
     else shiny::numericInput('temp_surface', 'Surface temperature [F]:', 60)
   }
 })
-output$button_check_1 <- renderText({
-  x <- NULL
-  if (input$validate > 0) x <- "Data validated!"
-  return(x)
-})
+#output$button_check_1 <- renderText({
+#  x <- NULL
+#  if (input$validate > 0) x <- "Data validated!"
+#  return(x)
+#})
 output$pressure_min <- renderUI({
   if (input$analysis_method == 1) shiny::numericInput('press_min', "Minimum Pressure [psig]", 1000, step = 10, min = 0)
 })
@@ -843,34 +906,43 @@ output$selectize_corr_oil_1 <- renderUI({
 output$selectize_corr_oil_2 <- renderUI({
   if (input$analysis_method < 2) {
     shiny::selectInput("corr_oil_2", "Viscosity Correlation:",
-                       c("Glaso" = 0, "Standing" = 1, "Lasater" = 2, "VazquezBeggs" = 3,
-                         "Petroskyetal" = 4, "AlMarhoun" = 5, "DeGhettoetalHeavyoil" = 6))
+                       c("Beal et al." = 0, "Beggs et al." = 1, "Petrosky et al." = 2,
+                        "Egbogahetal Heavy Oil" = 3, "Bergman Sutton" = 4,
+                        "DeGhetto et al. Heavy Oil" = 5))
   } else {
     shiny::selectizeInput('corr_oil_2', 'Choose Viscosity Correlations:',
-                   choices = c("Glaso", "Standing", "Petrosky", "VazquezBeggs"),
+                   choices = c("Beal et al." = 0, "Beggs et al." = 1, "Petrosky et al." = 2,
+                        "Egbogahetal Heavy Oil" = 3, "Bergman Sutton" = 4,
+                        "DeGhetto et al. Heavy Oil" = 5),
                    multiple = TRUE,
                    selected = c("Glaso"))
   }
 })
 output$sensitivity_ref <- renderUI({
   data <- results_r() %>%
-    dplyr::select_if(is.numeric) %>%
-    dplyr::select(-CORR, -UCORR)
+    dplyr::select_if(is.numeric)
 
   shiny::selectInput("sens_ref", "Reference Variable:",
                      colnames(data))
 })
 output$pvsp_reference <- renderUI({
+  outputvariables <- output_var_r()
+  outputvariables_matcheable <- paste(outputvariables, collapse = "|")
+
   data <- results_r() %>%
-    dplyr::select_if(is.numeric)
+    dplyr::select_if(is.numeric) %>%
+    dplyr::select(matches(outputvariables_matcheable))
 
   shiny::selectInput("pvsp_ppty", "Reference Variable:",
                      colnames(data))
 })
 output$fluid_corr_sens_ref <- renderUI({
+  outputvariables <- output_var_r()
+  outputvariables_matcheable <- paste(outputvariables, collapse = "|")
+
   data <- results_r() %>%
     dplyr::select_if(is.numeric) %>%
-    dplyr::select(-CORR, -UCORR)
+    dplyr::select(matches(outputvariables_matcheable))
 
   shiny::selectInput("fcorr_sens_ref", "Reference Variable:",
                      colnames(data))

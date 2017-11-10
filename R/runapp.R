@@ -14,9 +14,8 @@ utils::globalVariables(c("X_mean", "X_sd", "X_distro", "X_lower", "X_mean", "X_s
 #' }
 #' @export
 run <- function() {
-  # browseURL("www.google.com")
+  require(Flamingo)
   package_path <- path.package("Flamingo")
-  # full_path <- paste0(path, "/shiny")
   shiny_path <- file.path(package_path, "shiny")
   shiny::runApp(shiny_path)
   }
